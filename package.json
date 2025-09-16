@@ -1,0 +1,16 @@
+{
+  "name": "my_awesome_project",
+  "version": "1.0.0",
+  "description": "Claude 개발환경이 설정된 프로젝트입니다.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"테스트 프레임워크가 아직 설정되지 않았습니다\" && exit 0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
