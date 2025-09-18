@@ -8,6 +8,27 @@ This is a specification-driven development project utilizing the SuperClaude Fra
 
 ## Development Commands
 
+### Git Workflow Commands (NEW: Simple GitHub Flow)
+```bash
+# Quick deployment workflow for solo developers
+git-flow deploy          # Deploy current changes to main branch
+git-flow feature NAME    # Start new feature branch
+git-flow hotfix NAME     # Create and deploy hotfix quickly
+git-flow rollback        # Rollback to previous version
+git-flow status          # Show current branch and deployment status
+git-flow --help          # Show help and examples
+
+# Short aliases (after running setup-git-flow.sh)
+gfd                      # git-flow deploy
+gff NAME                 # git-flow feature
+gfh NAME                 # git-flow hotfix
+gfr                      # git-flow rollback
+gfs                      # git-flow status
+
+# Setup (one-time)
+./scripts/setup-git-flow.sh  # Configure Git aliases and workflow
+```
+
 ### Build & Test Commands
 ```bash
 # Test commands (DOT Platform V0.1 - COMPLETED IMPLEMENTATION)
@@ -83,11 +104,23 @@ The project is configured with SuperClaude Framework through:
 - **Testing**: Comprehensive E2E, integration, and unit tests
 - **Deployment**: Docker Compose with Nginx reverse proxy
 
-### Deployment Validation (CURRENT - specs/003-/)
+### Deployment Validation (COMPLETED - specs/003-/)
 - **Purpose**: Validate implemented features without code modification
 - **Requirements**: Docker health checks, performance validation (< 3초, 10 users)
 - **Approach**: Multi-layer validation (health, functional, performance, accessibility)
-- **Status**: Planning phase complete, ready for /tasks command
+- **Status**: Implementation complete with comprehensive validation suite
+
+### Simple GitHub Flow (CURRENT - specs/004-simple-github-flow/)
+- **Purpose**: Streamlined Git workflow for solo developers with frequent deployments
+- **Core Commands**: deploy, feature, hotfix, rollback - all optimized for speed
+- **GitHub Actions**: Automatic deployment on main push, PR preview environments
+- **Key Features**:
+  - No branch protection for quick fixes (solo developer mode)
+  - Tests run but don't block deployment (continue-on-error: true)
+  - Automatic tagging for easy rollbacks
+  - Beginner-friendly with Korean/English support planned
+- **Integration**: Works with Vercel for automatic frontend deployment
+- **Status**: Core implementation complete, polish tasks remaining
 
 ## Important Notes
 
