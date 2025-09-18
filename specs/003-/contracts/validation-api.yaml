@@ -1,0 +1,509 @@
+openapi: 3.0.3
+info:
+  title: DOT Platform Validation API
+  description: Deployment validation and testing endpoints
+  version: 1.0.0
+  contact:
+    name: DOT Platform Team
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://api.dot-platform.com
+    description: Production
+
+paths:
+  /validate:
+    post:
+      summary: Trigger deployment validation
+      description: 배포 검증 스위트 실행 (E2E 테스트, 성능 테스트, 보안 검증)
+      operationId: runValidation
+      tags:
+        - Validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidationRequest'
+            examples:
+              full_validation:
+                summary: Full deployment validation
+                value:
+                  validation_types: ["health", "functional", "performance", "security"]
+                  timeout_seconds: 300
+                  environment: "production"
+              smoke_test:
+                summary: Quick smoke test validation
+                value:
+                  validation_types: ["health", "functional"]
+                  timeout_seconds: 60
+                  environment: "production"
+      responses:
+        '202':
+          description: Validation started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationStartResponse'
+        '400':
+          description: Invalid validation request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Validation service unavailable
+
+  /validate/{validation_id}:
+    get:
+      summary: Get validation status
+      description: 특정 검증 실행의 상태와 결과 조회
+      operationId: getValidationStatus
+      tags:
+        - Validation
+      parameters:
+        - name: validation_id
+          in: path
+          required: true
+          description: 검증 실행 ID
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9\-]+$'
+      responses:
+        '200':
+          description: Validation status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationStatusResponse'
+        '404':
+          description: Validation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /validate/{validation_id}/results:
+    get:
+      summary: Get detailed validation results
+      description: 검증 실행의 상세 결과 및 개별 테스트 정보
+      operationId: getValidationResults
+      tags:
+        - Validation
+      parameters:
+        - name: validation_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: 특정 카테고리 결과만 필터링
+          schema:
+            type: string
+            enum: [health, functional, performance, security, accessibility]
+        - name: status
+          in: query
+          description: 특정 상태 결과만 필터링
+          schema:
+            type: string
+            enum: [pass, fail, skip, timeout]
+      responses:
+        '200':
+          description: Validation results retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResultsResponse'
+
+  /deployment/{deployment_id}/status:
+    get:
+      summary: Get deployment status
+      description: 특정 배포의 전체 상태 정보 조회
+      operationId: getDeploymentStatus
+      tags:
+        - Deployment
+      parameters:
+        - name: deployment_id
+          in: path
+          required: true
+          description: 배포 ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Deployment status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentStatusResponse'
+
+components:
+  schemas:
+    ValidationRequest:
+      type: object
+      required:
+        - validation_types
+      properties:
+        validation_types:
+          type: array
+          description: 실행할 검증 유형들
+          items:
+            type: string
+            enum: [health, functional, performance, security, accessibility]
+          minItems: 1
+        timeout_seconds:
+          type: integer
+          minimum: 30
+          maximum: 1800
+          default: 300
+          description: 검증 타임아웃 (초)
+        environment:
+          type: string
+          enum: [local, staging, production]
+          default: production
+          description: 검증 대상 환경
+        parameters:
+          type: object
+          description: 검증별 추가 매개변수
+          properties:
+            performance:
+              type: object
+              properties:
+                concurrent_users:
+                  type: integer
+                  minimum: 1
+                  maximum: 1000
+                  default: 10
+                duration_seconds:
+                  type: integer
+                  minimum: 30
+                  maximum: 3600
+                  default: 120
+            functional:
+              type: object
+              properties:
+                test_suites:
+                  type: array
+                  items:
+                    type: string
+                    enum: [smoke, regression, critical_path]
+                  default: [smoke]
+
+    ValidationStartResponse:
+      type: object
+      required:
+        - validation_id
+        - status
+        - estimated_duration_seconds
+      properties:
+        validation_id:
+          type: string
+          description: 검증 실행 고유 식별자
+        status:
+          type: string
+          enum: [queued, running]
+          description: 검증 상태
+        estimated_duration_seconds:
+          type: integer
+          description: 예상 소요 시간 (초)
+        started_at:
+          type: string
+          format: date-time
+          description: 검증 시작 시간
+        validation_url:
+          type: string
+          format: uri
+          description: 검증 상태 조회 URL
+
+    ValidationStatusResponse:
+      type: object
+      required:
+        - validation_id
+        - status
+        - progress_percent
+      properties:
+        validation_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, completed, failed, timeout, cancelled]
+        progress_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: 진행률 (%)
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        current_phase:
+          type: string
+          description: 현재 실행 중인 단계
+        summary:
+          $ref: '#/components/schemas/ValidationSummary'
+
+    ValidationResultsResponse:
+      type: object
+      required:
+        - validation_id
+        - results
+        - summary
+      properties:
+        validation_id:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationResult'
+        summary:
+          $ref: '#/components/schemas/ValidationSummary'
+        artifacts:
+          type: object
+          description: 검증 아티팩트 (스크린샷, 로그 등)
+          properties:
+            screenshots:
+              type: array
+              items:
+                type: string
+                format: uri
+            logs:
+              type: array
+              items:
+                type: string
+                format: uri
+            reports:
+              type: array
+              items:
+                type: string
+                format: uri
+
+    ValidationResult:
+      type: object
+      required:
+        - test_name
+        - category
+        - status
+        - execution_time_ms
+      properties:
+        test_name:
+          type: string
+          description: 테스트 이름
+        category:
+          type: string
+          enum: [health, functional, performance, security, accessibility]
+        status:
+          type: string
+          enum: [pass, fail, skip, timeout]
+        execution_time_ms:
+          type: integer
+          minimum: 0
+        assertion_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssertionResult'
+        error_details:
+          $ref: '#/components/schemas/ErrorDetails'
+        metrics:
+          type: object
+          description: 성능 테스트 메트릭
+          additionalProperties: true
+
+    AssertionResult:
+      type: object
+      required:
+        - assertion
+        - passed
+      properties:
+        assertion:
+          type: string
+          description: Assertion 설명
+        expected:
+          description: 예상 값
+        actual:
+          description: 실제 값
+        passed:
+          type: boolean
+          description: 통과 여부
+
+    ErrorDetails:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 오류 메시지
+        stack_trace:
+          type: string
+          description: 스택 트레이스
+        screenshot_url:
+          type: string
+          format: uri
+          description: 오류 발생 시점 스크린샷
+        additional_info:
+          type: object
+          additionalProperties: true
+
+    ValidationSummary:
+      type: object
+      required:
+        - total_tests
+        - passed_tests
+        - failed_tests
+        - success_rate
+      properties:
+        total_tests:
+          type: integer
+          minimum: 0
+        passed_tests:
+          type: integer
+          minimum: 0
+        failed_tests:
+          type: integer
+          minimum: 0
+        skipped_tests:
+          type: integer
+          minimum: 0
+        success_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 성공률 (0.0 - 1.0)
+        execution_time_ms:
+          type: integer
+          minimum: 0
+        categories:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/CategoryResult'
+        performance_requirements_met:
+          type: boolean
+          description: 성능 요구사항 충족 여부
+        deployment_recommendation:
+          type: string
+          enum: [proceed, proceed_with_caution, rollback, investigate]
+          description: 배포 권고사항
+
+    CategoryResult:
+      type: object
+      required:
+        - category
+        - total
+        - passed
+        - failed
+      properties:
+        category:
+          type: string
+        total:
+          type: integer
+          minimum: 0
+        passed:
+          type: integer
+          minimum: 0
+        failed:
+          type: integer
+          minimum: 0
+        skipped:
+          type: integer
+          minimum: 0
+        success_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+
+    DeploymentStatusResponse:
+      type: object
+      required:
+        - deployment_id
+        - version
+        - status
+        - services
+      properties:
+        deployment_id:
+          type: string
+          format: uuid
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+        status:
+          type: string
+          enum: [starting, health_check, validating, healthy, degraded, failed]
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ServiceStatus'
+        validation_summary:
+          $ref: '#/components/schemas/ValidationSummary'
+        performance_metrics:
+          $ref: '#/components/schemas/PerformanceMetrics'
+
+    ServiceStatus:
+      type: object
+      required:
+        - service_name
+        - status
+      properties:
+        service_name:
+          type: string
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy, unknown]
+        last_health_check:
+          type: string
+          format: date-time
+        response_time_ms:
+          type: integer
+          minimum: 0
+        error_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+        uptime_seconds:
+          type: integer
+          minimum: 0
+
+    PerformanceMetrics:
+      type: object
+      properties:
+        response_times:
+          type: object
+          properties:
+            p50_ms:
+              type: integer
+            p95_ms:
+              type: integer
+            p99_ms:
+              type: integer
+        page_load_times:
+          type: object
+          properties:
+            first_contentful_paint_ms:
+              type: integer
+            time_to_interactive_ms:
+              type: integer
+        concurrent_users:
+          type: integer
+        error_rate:
+          type: number
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: 오류 코드
+        message:
+          type: string
+          description: 오류 메시지
+        details:
+          type: object
+          additionalProperties: true

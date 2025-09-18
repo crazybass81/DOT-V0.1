@@ -1,0 +1,262 @@
+{
+  "app": {
+    "name": "DOT 플랫폼",
+    "title": "DOT - 식당 관리 시스템",
+    "subtitle": "스마트한 식당 운영을 위한 통합 솔루션"
+  },
+  "navigation": {
+    "home": "홈",
+    "dashboard": "대시보드",
+    "attendance": "출퇴근",
+    "schedule": "스케줄",
+    "payroll": "급여",
+    "employees": "직원 관리",
+    "settings": "설정",
+    "profile": "프로필",
+    "logout": "로그아웃"
+  },
+  "auth": {
+    "login": {
+      "title": "로그인",
+      "email": "이메일",
+      "password": "비밀번호",
+      "rememberMe": "로그인 상태 유지",
+      "forgotPassword": "비밀번호를 잊으셨나요?",
+      "submit": "로그인",
+      "noAccount": "계정이 없으신가요?",
+      "signUp": "회원가입"
+    },
+    "signup": {
+      "title": "회원가입",
+      "businessName": "사업장명",
+      "ownerName": "대표자명",
+      "email": "이메일",
+      "password": "비밀번호",
+      "confirmPassword": "비밀번호 확인",
+      "phone": "연락처",
+      "address": "주소",
+      "submit": "가입하기",
+      "hasAccount": "이미 계정이 있으신가요?",
+      "login": "로그인"
+    },
+    "errors": {
+      "invalidCredentials": "이메일 또는 비밀번호가 올바르지 않습니다.",
+      "emailRequired": "이메일을 입력해주세요.",
+      "passwordRequired": "비밀번호를 입력해주세요.",
+      "passwordMismatch": "비밀번호가 일치하지 않습니다.",
+      "emailInvalid": "올바른 이메일 형식을 입력해주세요.",
+      "passwordTooShort": "비밀번호는 8자 이상이어야 합니다."
+    }
+  },
+  "dashboard": {
+    "title": "대시보드",
+    "welcomeMessage": "안녕하세요, {{name}}님!",
+    "todayStats": "오늘의 현황",
+    "totalEmployees": "총 직원 수",
+    "presentToday": "오늘 출근",
+    "absentToday": "오늘 결근",
+    "lateToday": "오늘 지각",
+    "recentActivities": "최근 활동",
+    "upcomingSchedules": "예정된 스케줄",
+    "quickActions": "빠른 작업",
+    "viewAll": "전체 보기"
+  },
+  "attendance": {
+    "title": "출퇴근 관리",
+    "clockIn": "출근",
+    "clockOut": "퇴근",
+    "breakStart": "휴게 시작",
+    "breakEnd": "휴게 종료",
+    "status": {
+      "present": "출근",
+      "absent": "결근",
+      "late": "지각",
+      "earlyLeave": "조퇴",
+      "onBreak": "휴게 중"
+    },
+    "todayRecord": "오늘의 기록",
+    "workingHours": "근무 시간",
+    "breakTime": "휴게 시간",
+    "overtime": "연장 근무",
+    "history": "출퇴근 기록",
+    "filter": {
+      "thisWeek": "이번 주",
+      "thisMonth": "이번 달",
+      "lastMonth": "지난 달",
+      "custom": "기간 선택"
+    }
+  },
+  "schedule": {
+    "title": "스케줄 관리",
+    "mySchedule": "내 스케줄",
+    "teamSchedule": "팀 스케줄",
+    "addShift": "근무 추가",
+    "editShift": "근무 수정",
+    "deleteShift": "근무 삭제",
+    "shiftTypes": {
+      "morning": "오전",
+      "afternoon": "오후",
+      "evening": "저녁",
+      "night": "야간",
+      "dayOff": "휴무"
+    },
+    "recurring": "반복 설정",
+    "oneTime": "단발성",
+    "repeatOptions": {
+      "daily": "매일",
+      "weekly": "매주",
+      "biweekly": "격주",
+      "monthly": "매월"
+    }
+  },
+  "payroll": {
+    "title": "급여 관리",
+    "monthlySalary": "월급",
+    "hourlySalary": "시급",
+    "totalWorkHours": "총 근무시간",
+    "regularHours": "정규시간",
+    "overtimeHours": "연장시간",
+    "baseSalary": "기본급",
+    "overtimePay": "연장수당",
+    "allowances": "수당",
+    "deductions": "공제",
+    "netPay": "실지급액",
+    "payPeriod": "급여 기간",
+    "payDate": "급여일",
+    "payHistory": "급여 내역",
+    "generatePayslip": "급여명세서 생성"
+  },
+  "employees": {
+    "title": "직원 관리",
+    "addEmployee": "직원 추가",
+    "editEmployee": "직원 수정",
+    "deleteEmployee": "직원 삭제",
+    "employeeInfo": "직원 정보",
+    "personalInfo": "개인 정보",
+    "workInfo": "근무 정보",
+    "name": "이름",
+    "email": "이메일",
+    "phone": "연락처",
+    "address": "주소",
+    "birthDate": "생년월일",
+    "hireDate": "입사일",
+    "position": "직책",
+    "department": "부서",
+    "employmentType": {
+      "fullTime": "정규직",
+      "partTime": "비정규직",
+      "contract": "계약직",
+      "intern": "인턴"
+    },
+    "status": {
+      "active": "재직",
+      "inactive": "휴직",
+      "terminated": "퇴사"
+    }
+  },
+  "settings": {
+    "title": "설정",
+    "general": "일반 설정",
+    "business": "사업장 설정",
+    "workRules": "근무 규정",
+    "notifications": "알림 설정",
+    "integrations": "연동 설정",
+    "security": "보안 설정",
+    "language": "언어",
+    "theme": "테마",
+    "timezone": "시간대",
+    "workingHours": "근무 시간",
+    "breakTime": "휴게 시간",
+    "overtime": "연장 근무",
+    "holidays": "공휴일"
+  },
+  "common": {
+    "actions": {
+      "add": "추가",
+      "edit": "수정",
+      "delete": "삭제",
+      "save": "저장",
+      "cancel": "취소",
+      "confirm": "확인",
+      "submit": "제출",
+      "close": "닫기",
+      "search": "검색",
+      "filter": "필터",
+      "export": "내보내기",
+      "import": "가져오기",
+      "print": "인쇄",
+      "refresh": "새로고침",
+      "reset": "초기화"
+    },
+    "status": {
+      "active": "활성",
+      "inactive": "비활성",
+      "pending": "대기중",
+      "approved": "승인됨",
+      "rejected": "거부됨",
+      "completed": "완료",
+      "cancelled": "취소됨"
+    },
+    "messages": {
+      "loading": "로딩 중...",
+      "saving": "저장 중...",
+      "saved": "저장되었습니다.",
+      "deleted": "삭제되었습니다.",
+      "error": "오류가 발생했습니다.",
+      "success": "성공적으로 처리되었습니다.",
+      "noData": "데이터가 없습니다.",
+      "confirmDelete": "정말로 삭제하시겠습니까?",
+      "unsavedChanges": "저장하지 않은 변경사항이 있습니다."
+    },
+    "time": {
+      "today": "오늘",
+      "yesterday": "어제",
+      "tomorrow": "내일",
+      "thisWeek": "이번 주",
+      "thisMonth": "이번 달",
+      "thisYear": "올해",
+      "lastWeek": "지난 주",
+      "lastMonth": "지난 달",
+      "lastYear": "작년",
+      "morning": "오전",
+      "afternoon": "오후",
+      "evening": "저녁",
+      "night": "밤"
+    },
+    "form": {
+      "required": "필수 항목입니다.",
+      "invalid": "형식이 올바르지 않습니다.",
+      "tooShort": "너무 짧습니다.",
+      "tooLong": "너무 깁니다.",
+      "selectOption": "옵션을 선택해주세요.",
+      "enterValue": "값을 입력해주세요."
+    },
+    "table": {
+      "noResults": "결과가 없습니다.",
+      "itemsPerPage": "페이지당 항목 수",
+      "of": "총",
+      "items": "항목",
+      "page": "페이지",
+      "next": "다음",
+      "previous": "이전",
+      "first": "처음",
+      "last": "마지막"
+    }
+  },
+  "accessibility": {
+    "skipToContent": "본문으로 건너뛰기",
+    "menuToggle": "메뉴 토글",
+    "closeModal": "모달 닫기",
+    "openMenu": "메뉴 열기",
+    "closeMenu": "메뉴 닫기",
+    "loading": "로딩 중",
+    "error": "오류",
+    "success": "성공",
+    "warning": "경고",
+    "info": "정보",
+    "expand": "펼치기",
+    "collapse": "접기",
+    "sortAscending": "오름차순 정렬",
+    "sortDescending": "내림차순 정렬"
+  }
+}

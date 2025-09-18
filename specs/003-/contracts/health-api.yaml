@@ -1,0 +1,328 @@
+openapi: 3.0.3
+info:
+  title: DOT Platform Health Check API
+  description: Health check endpoints for deployment validation
+  version: 1.0.0
+  contact:
+    name: DOT Platform Team
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://api.dot-platform.com
+    description: Production
+
+paths:
+  /health:
+    get:
+      summary: Overall system health check
+      description: 전체 시스템 건강도 확인 (데이터베이스, Redis, 외부 서비스 포함)
+      operationId: getSystemHealth
+      tags:
+        - Health
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                healthy_system:
+                  summary: Healthy system example
+                  value:
+                    status: "healthy"
+                    timestamp: "2025-09-18T10:30:00Z"
+                    uptime_seconds: 86400
+                    version: "1.0.15"
+                    checks:
+                      - name: "database"
+                        status: "healthy"
+                        response_time_ms: 15
+                        details:
+                          connection_pool: "20/20"
+                          active_connections: 5
+                      - name: "redis"
+                        status: "healthy"
+                        response_time_ms: 5
+                        details:
+                          memory_usage: "45MB"
+                          connected_clients: 3
+        '503':
+          description: System is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                unhealthy_system:
+                  summary: Unhealthy system example
+                  value:
+                    status: "unhealthy"
+                    timestamp: "2025-09-18T10:30:00Z"
+                    uptime_seconds: 3600
+                    version: "1.0.15"
+                    checks:
+                      - name: "database"
+                        status: "unhealthy"
+                        response_time_ms: 5000
+                        error: "Connection timeout"
+                      - name: "redis"
+                        status: "healthy"
+                        response_time_ms: 5
+
+  /health/live:
+    get:
+      summary: Liveness probe
+      description: 컨테이너가 살아있는지 확인 (Kubernetes liveness probe 호환)
+      operationId: getLivenessProbe
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivenessResponse'
+        '503':
+          description: Service is not alive
+
+  /health/ready:
+    get:
+      summary: Readiness probe
+      description: 트래픽을 받을 준비가 되었는지 확인 (Kubernetes readiness probe 호환)
+      operationId: getReadinessProbe
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is ready to receive traffic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+        '503':
+          description: Service is not ready
+
+  /metrics:
+    get:
+      summary: System metrics
+      description: 시스템 성능 지표 및 리소스 사용량 정보
+      operationId: getSystemMetrics
+      tags:
+        - Metrics
+      responses:
+        '200':
+          description: System metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - uptime_seconds
+        - version
+        - checks
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          description: 전체 시스템 상태
+        timestamp:
+          type: string
+          format: date-time
+          description: 헬스체크 수행 시간 (ISO 8601)
+        uptime_seconds:
+          type: integer
+          minimum: 0
+          description: 서비스 가동 시간 (초)
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+          description: 애플리케이션 버전 (Semantic Versioning)
+        checks:
+          type: array
+          description: 개별 컴포넌트 헬스체크 결과
+          items:
+            $ref: '#/components/schemas/HealthCheck'
+        response_time_ms:
+          type: integer
+          minimum: 0
+          description: 전체 헬스체크 수행 시간 (밀리초)
+
+    HealthCheck:
+      type: object
+      required:
+        - name
+        - status
+        - response_time_ms
+      properties:
+        name:
+          type: string
+          enum: [database, redis, external_api, file_system]
+          description: 헬스체크 대상 컴포넌트 이름
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          description: 컴포넌트 상태
+        response_time_ms:
+          type: integer
+          minimum: 0
+          description: 컴포넌트 응답 시간 (밀리초)
+        error:
+          type: string
+          description: 오류 메시지 (상태가 unhealthy인 경우)
+        details:
+          type: object
+          description: 추가 세부 정보
+          additionalProperties: true
+
+    LivenessResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [alive]
+        timestamp:
+          type: string
+          format: date-time
+
+    ReadinessResponse:
+      type: object
+      required:
+        - status
+        - ready
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]
+        ready:
+          type: boolean
+          description: 트래픽 수신 준비 상태
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/HealthCheck'
+
+    MetricsResponse:
+      type: object
+      required:
+        - timestamp
+        - response_times
+        - resource_usage
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: 메트릭 수집 시간
+        response_times:
+          type: object
+          required:
+            - p50_ms
+            - p95_ms
+            - p99_ms
+            - max_ms
+          properties:
+            p50_ms:
+              type: integer
+              minimum: 0
+              description: 50th 백분위수 응답 시간 (밀리초)
+            p95_ms:
+              type: integer
+              minimum: 0
+              description: 95th 백분위수 응답 시간 (밀리초)
+            p99_ms:
+              type: integer
+              minimum: 0
+              description: 99th 백분위수 응답 시간 (밀리초)
+            max_ms:
+              type: integer
+              minimum: 0
+              description: 최대 응답 시간 (밀리초)
+        concurrent_users:
+          type: integer
+          minimum: 0
+          description: 현재 동시 사용자 수
+        requests_per_second:
+          type: number
+          minimum: 0
+          description: 초당 요청 수
+        error_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 오류율 (0.0 - 1.0)
+        resource_usage:
+          type: object
+          required:
+            - memory_mb
+            - cpu_percent
+          properties:
+            memory_mb:
+              type: integer
+              minimum: 0
+              description: 메모리 사용량 (MB)
+            cpu_percent:
+              type: number
+              minimum: 0
+              maximum: 100
+              description: CPU 사용률 (%)
+            disk_usage_percent:
+              type: number
+              minimum: 0
+              maximum: 100
+              description: 디스크 사용률 (%)
+
+  examples:
+    HealthySystem:
+      summary: Healthy system with all services running
+      value:
+        status: healthy
+        timestamp: "2025-09-18T10:30:00Z"
+        uptime_seconds: 86400
+        version: "1.0.15"
+        response_time_ms: 45
+        checks:
+          - name: database
+            status: healthy
+            response_time_ms: 15
+            details:
+              connection_pool: "20/20"
+              active_connections: 5
+              last_migration: "2025-09-18T08:00:00Z"
+          - name: redis
+            status: healthy
+            response_time_ms: 5
+            details:
+              memory_usage: "45MB"
+              connected_clients: 3
+              cache_hit_ratio: 0.95
+
+    DegradedSystem:
+      summary: System with performance issues
+      value:
+        status: degraded
+        timestamp: "2025-09-18T10:30:00Z"
+        uptime_seconds: 3600
+        version: "1.0.15"
+        response_time_ms: 1200
+        checks:
+          - name: database
+            status: degraded
+            response_time_ms: 800
+            details:
+              connection_pool: "20/20"
+              active_connections: 18
+              slow_queries: 5
+          - name: redis
+            status: healthy
+            response_time_ms: 5

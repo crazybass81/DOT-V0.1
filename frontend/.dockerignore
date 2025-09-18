@@ -1,0 +1,43 @@
+# 의존성 및 빌드 아티팩트
+node_modules/
+build/
+dist/
+npm-debug.log
+yarn-error.log
+
+# 환경 설정
+.env
+.env.*
+!.env.example
+
+# 개발 도구
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# 테스트
+coverage/
+.nyc_output/
+
+# 문서
+*.md
+docs/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# 로그 및 임시 파일
+*.log
+temp/
+tmp/
+
+# 소스맵 (프로덕션에서는 제외)
+*.map

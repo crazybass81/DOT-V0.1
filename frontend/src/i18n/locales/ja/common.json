@@ -1,0 +1,262 @@
+{
+  "app": {
+    "name": "DOTプラットフォーム",
+    "title": "DOT - レストラン管理システム",
+    "subtitle": "スマートなレストラン運営のための統合ソリューション"
+  },
+  "navigation": {
+    "home": "ホーム",
+    "dashboard": "ダッシュボード",
+    "attendance": "出退勤",
+    "schedule": "スケジュール",
+    "payroll": "給与",
+    "employees": "従業員管理",
+    "settings": "設定",
+    "profile": "プロフィール",
+    "logout": "ログアウト"
+  },
+  "auth": {
+    "login": {
+      "title": "ログイン",
+      "email": "メールアドレス",
+      "password": "パスワード",
+      "rememberMe": "ログイン状態を保持",
+      "forgotPassword": "パスワードをお忘れですか？",
+      "submit": "ログイン",
+      "noAccount": "アカウントをお持ちでないですか？",
+      "signUp": "新規登録"
+    },
+    "signup": {
+      "title": "新規登録",
+      "businessName": "事業所名",
+      "ownerName": "代表者名",
+      "email": "メールアドレス",
+      "password": "パスワード",
+      "confirmPassword": "パスワード確認",
+      "phone": "電話番号",
+      "address": "住所",
+      "submit": "登録",
+      "hasAccount": "すでにアカウントをお持ちですか？",
+      "login": "ログイン"
+    },
+    "errors": {
+      "invalidCredentials": "メールアドレスまたはパスワードが正しくありません。",
+      "emailRequired": "メールアドレスを入力してください。",
+      "passwordRequired": "パスワードを入力してください。",
+      "passwordMismatch": "パスワードが一致しません。",
+      "emailInvalid": "正しいメールアドレスの形式を入力してください。",
+      "passwordTooShort": "パスワードは8文字以上である必要があります。"
+    }
+  },
+  "dashboard": {
+    "title": "ダッシュボード",
+    "welcomeMessage": "こんにちは、{{name}}さん！",
+    "todayStats": "本日の状況",
+    "totalEmployees": "総従業員数",
+    "presentToday": "本日出勤",
+    "absentToday": "本日欠勤",
+    "lateToday": "本日遅刻",
+    "recentActivities": "最近のアクティビティ",
+    "upcomingSchedules": "予定されているスケジュール",
+    "quickActions": "クイックアクション",
+    "viewAll": "すべて表示"
+  },
+  "attendance": {
+    "title": "出退勤管理",
+    "clockIn": "出勤",
+    "clockOut": "退勤",
+    "breakStart": "休憩開始",
+    "breakEnd": "休憩終了",
+    "status": {
+      "present": "出勤",
+      "absent": "欠勤",
+      "late": "遅刻",
+      "earlyLeave": "早退",
+      "onBreak": "休憩中"
+    },
+    "todayRecord": "本日の記録",
+    "workingHours": "勤務時間",
+    "breakTime": "休憩時間",
+    "overtime": "残業",
+    "history": "出退勤履歴",
+    "filter": {
+      "thisWeek": "今週",
+      "thisMonth": "今月",
+      "lastMonth": "先月",
+      "custom": "期間選択"
+    }
+  },
+  "schedule": {
+    "title": "スケジュール管理",
+    "mySchedule": "マイスケジュール",
+    "teamSchedule": "チームスケジュール",
+    "addShift": "シフト追加",
+    "editShift": "シフト編集",
+    "deleteShift": "シフト削除",
+    "shiftTypes": {
+      "morning": "午前",
+      "afternoon": "午後",
+      "evening": "夕方",
+      "night": "夜間",
+      "dayOff": "休日"
+    },
+    "recurring": "繰り返し設定",
+    "oneTime": "単発",
+    "repeatOptions": {
+      "daily": "毎日",
+      "weekly": "毎週",
+      "biweekly": "隔週",
+      "monthly": "毎月"
+    }
+  },
+  "payroll": {
+    "title": "給与管理",
+    "monthlySalary": "月給",
+    "hourlySalary": "時給",
+    "totalWorkHours": "総勤務時間",
+    "regularHours": "通常勤務時間",
+    "overtimeHours": "残業時間",
+    "baseSalary": "基本給",
+    "overtimePay": "残業手当",
+    "allowances": "手当",
+    "deductions": "控除",
+    "netPay": "実支給額",
+    "payPeriod": "給与期間",
+    "payDate": "給与日",
+    "payHistory": "給与履歴",
+    "generatePayslip": "給与明細書生成"
+  },
+  "employees": {
+    "title": "従業員管理",
+    "addEmployee": "従業員追加",
+    "editEmployee": "従業員編集",
+    "deleteEmployee": "従業員削除",
+    "employeeInfo": "従業員情報",
+    "personalInfo": "個人情報",
+    "workInfo": "勤務情報",
+    "name": "名前",
+    "email": "メールアドレス",
+    "phone": "電話番号",
+    "address": "住所",
+    "birthDate": "生年月日",
+    "hireDate": "入社日",
+    "position": "役職",
+    "department": "部署",
+    "employmentType": {
+      "fullTime": "正社員",
+      "partTime": "非正規",
+      "contract": "契約社員",
+      "intern": "インターン"
+    },
+    "status": {
+      "active": "在職",
+      "inactive": "休職",
+      "terminated": "退職"
+    }
+  },
+  "settings": {
+    "title": "設定",
+    "general": "一般設定",
+    "business": "事業所設定",
+    "workRules": "就業規則",
+    "notifications": "通知設定",
+    "integrations": "連携設定",
+    "security": "セキュリティ設定",
+    "language": "言語",
+    "theme": "テーマ",
+    "timezone": "タイムゾーン",
+    "workingHours": "勤務時間",
+    "breakTime": "休憩時間",
+    "overtime": "残業",
+    "holidays": "祝日"
+  },
+  "common": {
+    "actions": {
+      "add": "追加",
+      "edit": "編集",
+      "delete": "削除",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "confirm": "確認",
+      "submit": "送信",
+      "close": "閉じる",
+      "search": "検索",
+      "filter": "フィルター",
+      "export": "エクスポート",
+      "import": "インポート",
+      "print": "印刷",
+      "refresh": "更新",
+      "reset": "リセット"
+    },
+    "status": {
+      "active": "有効",
+      "inactive": "無効",
+      "pending": "保留中",
+      "approved": "承認済み",
+      "rejected": "拒否済み",
+      "completed": "完了",
+      "cancelled": "キャンセル済み"
+    },
+    "messages": {
+      "loading": "読み込み中...",
+      "saving": "保存中...",
+      "saved": "保存されました。",
+      "deleted": "削除されました。",
+      "error": "エラーが発生しました。",
+      "success": "正常に処理されました。",
+      "noData": "データがありません。",
+      "confirmDelete": "本当に削除しますか？",
+      "unsavedChanges": "保存されていない変更があります。"
+    },
+    "time": {
+      "today": "今日",
+      "yesterday": "昨日",
+      "tomorrow": "明日",
+      "thisWeek": "今週",
+      "thisMonth": "今月",
+      "thisYear": "今年",
+      "lastWeek": "先週",
+      "lastMonth": "先月",
+      "lastYear": "昨年",
+      "morning": "午前",
+      "afternoon": "午後",
+      "evening": "夕方",
+      "night": "夜"
+    },
+    "form": {
+      "required": "必須項目です。",
+      "invalid": "形式が正しくありません。",
+      "tooShort": "短すぎます。",
+      "tooLong": "長すぎます。",
+      "selectOption": "オプションを選択してください。",
+      "enterValue": "値を入力してください。"
+    },
+    "table": {
+      "noResults": "結果が見つかりません。",
+      "itemsPerPage": "ページあたりのアイテム数",
+      "of": "全",
+      "items": "アイテム",
+      "page": "ページ",
+      "next": "次へ",
+      "previous": "前へ",
+      "first": "最初",
+      "last": "最後"
+    }
+  },
+  "accessibility": {
+    "skipToContent": "本文へスキップ",
+    "menuToggle": "メニュー切り替え",
+    "closeModal": "モーダルを閉じる",
+    "openMenu": "メニューを開く",
+    "closeMenu": "メニューを閉じる",
+    "loading": "読み込み中",
+    "error": "エラー",
+    "success": "成功",
+    "warning": "警告",
+    "info": "情報",
+    "expand": "展開",
+    "collapse": "折りたたみ",
+    "sortAscending": "昇順ソート",
+    "sortDescending": "降順ソート"
+  }
+}

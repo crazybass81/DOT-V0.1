@@ -1,0 +1,70 @@
+# DOT Platform 백엔드 Production Dockerfile
+# Node.js 기반 Express 서버
+
+# 기본 이미지: Node.js 18 Alpine (경량화)
+FROM node:18-alpine AS base
+
+# 패키지 설치 및 보안 업데이트
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
+    dumb-init \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# 작업 디렉터리 설정
+WORKDIR /app
+
+# 보안을 위한 non-root 유저 생성
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# 의존성 설치 단계
+FROM base AS dependencies
+
+# package.json과 package-lock.json 복사
+COPY backend/package*.json ./
+
+# 프로덕션 의존성만 설치
+RUN npm ci --only=production && npm cache clean --force
+
+# 개발 의존성 포함 설치 (빌드용)
+FROM base AS build
+
+COPY backend/package*.json ./
+RUN npm ci
+
+# 소스 코드 복사 및 빌드
+COPY backend/ ./
+
+# TypeScript 컴파일 (필요시)
+# RUN npm run build
+
+# 프로덕션 이미지 구성
+FROM base AS production
+
+# 환경 변수 설정
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# 프로덕션 의존성 복사
+COPY --from=dependencies /app/node_modules ./node_modules
+
+# 빌드된 애플리케이션 복사
+COPY --from=build /app ./
+
+# 파일 권한 변경
+RUN chown -R nodejs:nodejs /app
+
+# non-root 유저로 실행
+USER nodejs
+
+# 헬스체크 설정
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:$PORT/health || exit 1
+
+# 포트 노출
+EXPOSE $PORT
+
+# 애플리케이션 실행
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "src/server.js"]

@@ -1,0 +1,29 @@
+{
+  "name": "@dot/payroll-lib",
+  "version": "0.1.0",
+  "description": "급여 계산 및 명세서 생성 라이브러리",
+  "main": "src/index.js",
+  "bin": {
+    "payroll": "./cli.js"
+  },
+  "scripts": {
+    "test": "mocha tests/**/*.test.js",
+    "test:watch": "mocha tests/**/*.test.js --watch"
+  },
+  "keywords": [
+    "payroll",
+    "salary",
+    "wage",
+    "calculation",
+    "korea"
+  ],
+  "dependencies": {
+    "decimal.js": "^10.4.3"
+  },
+  "devDependencies": {
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0"
+  },
+  "author": "DOT Platform",
+  "license": "MIT"
+}

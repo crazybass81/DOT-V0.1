@@ -1,0 +1,34 @@
+{
+  "name": "@dot/attendance-lib",
+  "version": "0.1.0",
+  "description": "DOT Platform 근태 관리 라이브러리 - GPS 검증, QR 코드, 출퇴근 기록",
+  "main": "index.js",
+  "bin": {
+    "attendance": "./cli.js"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "cli": "node cli.js"
+  },
+  "keywords": [
+    "attendance",
+    "gps",
+    "qr-code",
+    "time-tracking"
+  ],
+  "author": "DOT Platform Team",
+  "license": "MIT",
+  "dependencies": {
+    "qrcode": "^1.5.3",
+    "yargs": "^17.7.2",
+    "crypto": "^1.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

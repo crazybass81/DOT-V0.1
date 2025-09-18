@@ -1,0 +1,389 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 데이터베이스 (프로덕션)
+  postgres:
+    image: postgis/postgis:15-3.3-alpine
+    container_name: dot-postgres-prod
+    environment:
+      POSTGRES_DB: ${DB_NAME:-dot_production}
+      POSTGRES_USER: ${DB_USER:-dotuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Seoul
+      # 한국어 로케일 설정
+      LANG: ko_KR.UTF-8
+      LC_ALL: ko_KR.UTF-8
+      POSTGRES_INITDB_ARGS: "--locale=ko_KR.UTF-8 --encoding=UTF8"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+      - ./scripts/postgres-healthcheck.sh:/usr/local/bin/postgres-healthcheck.sh:ro
+    networks:
+      - dot-network-prod
+    healthcheck:
+      # 강화된 헬스체크: 연결성, 쓰기 가능성, 응답 시간 검증
+      test: ["CMD-SHELL", "/usr/local/bin/postgres-healthcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # Redis 캐시 서버 (프로덕션)
+  redis:
+    image: redis:7-alpine
+    container_name: dot-redis-prod
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --timeout 30
+      --tcp-keepalive 60
+    environment:
+      TZ: Asia/Seoul
+    volumes:
+      - redis_prod_data:/data
+      - ./scripts/redis-healthcheck.sh:/usr/local/bin/redis-healthcheck.sh:ro
+    networks:
+      - dot-network-prod
+    healthcheck:
+      # 강화된 헬스체크: 연결, 읽기/쓰기, 메모리 사용량 검증
+      test: ["CMD-SHELL", "/usr/local/bin/redis-healthcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # 백엔드 서버 (프로덕션)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: dot-backend:latest
+    container_name: dot-backend-prod
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      SMS_API_KEY: ${SMS_API_KEY}
+      TZ: Asia/Seoul
+      # 모니터링 설정
+      NEW_RELIC_APP_NAME: ${NEW_RELIC_APP_NAME:-DOT-Platform}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./scripts/backend-healthcheck.sh:/usr/local/bin/backend-healthcheck.sh:ro
+    networks:
+      - dot-network-prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
+    # 배포 검증을 위한 강화된 헬스체크
+    healthcheck:
+      test: ["CMD-SHELL", "/usr/local/bin/backend-healthcheck.sh"]
+      interval: 20s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+
+  # 프론트엔드 서버 (프로덕션)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: /api/v1
+        REACT_APP_WS_URL: ${REACT_APP_WS_URL}
+    image: dot-frontend:latest
+    container_name: dot-frontend-prod
+    environment:
+      TZ: Asia/Seoul
+    networks:
+      - dot-network-prod
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # Nginx 리버스 프록시 & 로드 밸런서
+  nginx:
+    image: nginx:alpine
+    container_name: dot-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+    networks:
+      - dot-network-prod
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+
+  # 백업 서비스
+  backup:
+    image: postgres:15-alpine
+    container_name: dot-backup-prod
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Seoul
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    networks:
+      - dot-network-prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/bin/sh"]
+    command: ["/backup.sh"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # 모니터링 - Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: dot-prometheus-prod
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - dot-network-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # 모니터링 - Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: dot-grafana-prod
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_INSTALL_PLUGINS: redis-datasource,grafana-clock-panel
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL}
+      TZ: Asia/Seoul
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - dot-network-prod
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # 로그 수집 - Loki
+  loki:
+    image: grafana/loki:latest
+    container_name: dot-loki-prod
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - dot-network-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # 로그 수집 에이전트 - Promtail
+  promtail:
+    image: grafana/promtail:latest
+    container_name: dot-promtail-prod
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - ./logs:/var/log/app:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - dot-network-prod
+    depends_on:
+      - loki
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # 배포 검증 서비스 (DOT Platform 전용)
+  deployment-validator:
+    image: node:18-alpine
+    container_name: dot-deployment-validator
+    environment:
+      TZ: Asia/Seoul
+      NODE_ENV: production
+      VALIDATION_TARGET: ${VALIDATION_TARGET:-http://nginx}
+      VALIDATION_MODE: ${VALIDATION_MODE:-full}
+      KOREAN_LOCALE: ko_KR.UTF-8
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./tests:/tests:ro
+      - validation_reports:/validation-reports
+    networks:
+      - dot-network-prod
+    # 모든 핵심 서비스가 정상 상태일 때만 시작
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+      nginx:
+        condition: service_healthy
+    # 배포 검증 후 종료 (one-shot 서비스)
+    entrypoint: ["/bin/sh"]
+    command: ["/scripts/validate-deployment.sh"]
+    restart: "no"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+      restart_policy:
+        condition: none
+
+  # 지속적 모니터링 서비스 (24/7)
+  health-monitor:
+    image: alpine:latest
+    container_name: dot-health-monitor
+    environment:
+      TZ: Asia/Seoul
+      MONITOR_INTERVAL: ${MONITOR_INTERVAL:-60}
+      ALERT_WEBHOOK: ${ALERT_WEBHOOK}
+      KOREAN_LOCALE: ko_KR.UTF-8
+    volumes:
+      - ./scripts:/scripts:ro
+      - monitoring_logs:/monitoring-logs
+    networks:
+      - dot-network-prod
+    # 핵심 서비스들이 실행된 후 모니터링 시작
+    depends_on:
+      - deployment-validator
+    entrypoint: ["/bin/sh"]
+    command: ["/scripts/health-monitor.sh", "--daemon"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  postgres_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
+  nginx_cache:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  loki_data:
+    driver: local
+  # 배포 검증 관련 볼륨
+  validation_reports:
+    driver: local
+  monitoring_logs:
+    driver: local
+
+networks:
+  dot-network-prod:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

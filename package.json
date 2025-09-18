@@ -1,16 +1,42 @@
 {
-  "name": "my_awesome_project",
-  "version": "1.0.0",
-  "description": "Claude 개발환경이 설정된 프로젝트입니다.",
+  "name": "dot-platform",
+  "version": "1.0.15",
+  "description": "DOT Platform - 레스토랑 근태 관리 시스템",
   "main": "index.js",
   "directories": {
     "doc": "docs",
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"테스트 프레임워크가 아직 설정되지 않았습니다\" && exit 0"
+    "test": "echo \"테스트 프레임워크가 아직 설정되지 않았습니다\" && exit 0",
+    "validate:deployment": "./scripts/validate-deployment.sh",
+    "validate:smoke": "E2E_BASE_URL=http://localhost npx playwright test tests/deployment/e2e/smoke-tests.spec.js",
+    "validate:performance": "./scripts/performance-check.sh",
+    "validate:health": "./scripts/health-monitor.sh --check",
+    "validate:accessibility": "node tests/deployment/accessibility/a11y-check.js",
+    "validate:i18n": "node tests/deployment/i18n/language-check.js",
+    "test:contract": "jest tests/deployment/contract/ --config jest.contract.config.js",
+    "test:integration": "jest tests/deployment/integration/ --config jest.integration.config.js",
+    "test:e2e:deployment": "E2E_BASE_URL=http://localhost npx playwright test tests/deployment/e2e/",
+    "test:load": "k6 run tests/deployment/load/deployment-load.js",
+    "deploy:validate": "npm run validate:health && npm run validate:smoke && npm run validate:performance",
+    "report:deployment": "./scripts/generate-report.sh",
+    "logs:collect": "./scripts/collect-logs.sh"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "keywords": ["restaurant", "attendance", "management", "deployment", "validation"],
+  "author": "DOT Platform Team",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "playwright": "^1.55.0",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "k6": "^0.47.0",
+    "@axe-core/playwright": "^4.8.2",
+    "pa11y": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
 }

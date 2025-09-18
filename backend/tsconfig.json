@@ -1,0 +1,83 @@
+{
+  "compilerOptions": {
+    // 타겟 설정
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+
+    // 모듈 해석
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+
+    // 경로 매핑
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"],
+      "@lib/*": ["lib/*"],
+      "@api/*": ["api/*"],
+      "@services/*": ["services/*"],
+      "@middleware/*": ["middleware/*"],
+      "@utils/*": ["utils/*"],
+      "@models/*": ["models/*"],
+      "@config/*": ["config/*"]
+    },
+
+    // 타입 체크
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+
+    // 추가 체크
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": false,
+
+    // 출력 설정
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "removeComments": true,
+    "sourceMap": true,
+
+    // 실험적 기능
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // JavaScript 지원
+    "allowJs": true,
+    "checkJs": false,
+
+    // 기타 옵션
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*",
+    "tests/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "**/*.spec.js",
+    "**/*.test.js"
+  ],
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  }
+}

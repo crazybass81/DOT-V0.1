@@ -1,0 +1,305 @@
+/**
+ * DOT Platform Frontend - 글로벌 스타일
+ * 전역 스타일과 한국 근로 환경에 최적화된 UI 설정
+ */
+
+/* 한국어 폰트 설정 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+/* CSS 리셋 및 기본 설정 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Noto Sans KR', 'Roboto', 'Arial', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: #333333;
+  background-color: #fafafa;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 근로 시간 상태별 색상 변수 */
+:root {
+  --color-work-normal: #2e7d32;    /* 정상 근무 */
+  --color-work-overtime: #ed6c02;  /* 연장 근무 */
+  --color-work-late: #d32f2f;      /* 지각 */
+  --color-work-absent: #757575;    /* 결근 */
+  --color-break-active: #1976d2;   /* 휴게 중 */
+  --color-break-overtime: #f57c00; /* 휴게 시간 초과 */
+
+  /* 사업장 역할별 색상 */
+  --color-role-owner: #6a1b9a;     /* 사업주 */
+  --color-role-manager: #1976d2;   /* 관리자 */
+  --color-role-worker: #388e3c;    /* 근로자 */
+  --color-role-seeker: #757575;    /* 구직자 */
+
+  /* 시스템 색상 */
+  --color-primary: #1976d2;
+  --color-secondary: #f57c00;
+  --color-success: #2e7d32;
+  --color-warning: #ed6c02;
+  --color-error: #d32f2f;
+  --color-info: #0288d1;
+
+  /* 그림자 효과 */
+  --shadow-light: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-medium: 0 2px 8px rgba(0,0,0,0.1);
+  --shadow-heavy: 0 4px 16px rgba(0,0,0,0.15);
+
+  /* 보더 라디우스 */
+  --radius-small: 4px;
+  --radius-medium: 8px;
+  --radius-large: 12px;
+  --radius-circle: 50%;
+
+  /* 간격 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+}
+
+/* 스크롤바 커스터마이징 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: var(--radius-small);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: var(--radius-small);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* 포커스 아웃라인 설정 */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* 링크 스타일 */
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/* 유틸리티 클래스 */
+.hidden {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 애니메이션 */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 출근/퇴근 상태 표시용 클래스 */
+.status-normal {
+  color: var(--color-work-normal);
+}
+
+.status-warning {
+  color: var(--color-work-overtime);
+}
+
+.status-error {
+  color: var(--color-work-late);
+}
+
+.status-disabled {
+  color: var(--color-work-absent);
+}
+
+.status-info {
+  color: var(--color-break-active);
+}
+
+/* 역할별 배지 스타일 */
+.role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-small);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-owner {
+  background-color: rgba(106, 27, 154, 0.1);
+  color: var(--color-role-owner);
+}
+
+.role-manager {
+  background-color: rgba(25, 118, 210, 0.1);
+  color: var(--color-role-manager);
+}
+
+.role-worker {
+  background-color: rgba(56, 142, 60, 0.1);
+  color: var(--color-role-worker);
+}
+
+.role-seeker {
+  background-color: rgba(117, 117, 117, 0.1);
+  color: var(--color-role-seeker);
+}
+
+/* 로딩 상태 */
+.loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid var(--color-primary);
+  border-radius: var(--radius-circle);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    font-size: 13px;
+  }
+
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
+
+/* 인쇄용 스타일 */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* 고대비 모드 지원 */
+@media (prefers-contrast: high) {
+  :root {
+    --color-primary: #000080;
+    --color-secondary: #800000;
+    --shadow-light: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-medium: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-heavy: 0 4px 16px rgba(0,0,0,0.4);
+  }
+}
+
+/* 움직임 감소 모드 지원 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,394 @@
+openapi: 3.0.3
+info:
+  title: DOT Platform - 인증 API
+  description: DOT 플랫폼 인증 및 인가 API (실제 구현, Mock 없음)
+  version: 0.1.0
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: 개발 서버
+  - url: https://api.dot-platform.com/v1
+    description: 운영 서버
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: 사용자 회원가입
+      description: 새로운 사용자를 등록하고 자동으로 Seeker 역할을 부여합니다
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+                - phone
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]'
+                  example: SecurePass123!
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                  example: 김철수
+                phone:
+                  type: string
+                  pattern: '^010-\d{4}-\d{4}$'
+                  example: 010-1234-5678
+      responses:
+        '201':
+          description: 회원가입 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: 이메일 또는 전화번호 중복
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: 사용자 로그인
+      description: 이메일과 비밀번호로 로그인하여 JWT 토큰을 발급받습니다
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/UserResponse'
+                  accessToken:
+                    type: string
+                    description: JWT Access Token (1시간 유효)
+                  refreshToken:
+                    type: string
+                    description: JWT Refresh Token (7일 유효)
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserRole'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: 로그아웃
+      description: 현재 세션을 종료하고 Redis에서 토큰을 삭제합니다
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: 로그아웃 성공
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: 토큰 갱신
+      description: Refresh Token으로 새로운 Access Token을 발급받습니다
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: 토큰 갱신 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: 현재 사용자 정보 조회
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 사용자 정보
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/UserResponse'
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserRole'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/switch-role:
+    post:
+      tags:
+        - Authentication
+      summary: 역할 전환
+      description: 다중 역할을 가진 사용자가 현재 활성 역할을 전환합니다
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roleId
+              properties:
+                roleId:
+                  type: integer
+                  description: 전환할 역할 ID
+      responses:
+        '200':
+          description: 역할 전환 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentRole:
+                    $ref: '#/components/schemas/UserRole'
+                  accessToken:
+                    type: string
+                    description: 새 역할이 반영된 토큰
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /auth/verify-email:
+    post:
+      tags:
+        - Authentication
+      summary: 이메일 인증
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: 이메일 인증 성공
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: 비밀번호 재설정 요청
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '204':
+          description: 재설정 이메일 전송됨
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: 비밀번호 재설정
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - newPassword
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        '200':
+          description: 비밀번호 재설정 성공
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  schemas:
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phone:
+          type: string
+        profileImageUrl:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+        emailVerified:
+          type: boolean
+        phoneVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    UserRole:
+      type: object
+      properties:
+        id:
+          type: integer
+        roleType:
+          type: string
+          enum: [owner, manager, worker, seeker]
+        businessId:
+          type: integer
+          nullable: true
+        businessName:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          nullable: true
+
+  responses:
+    BadRequest:
+      description: 잘못된 요청
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: 인증 실패
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: 권한 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: 리소스를 찾을 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

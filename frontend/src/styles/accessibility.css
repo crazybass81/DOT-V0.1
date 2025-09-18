@@ -1,0 +1,514 @@
+/**
+ * 웹 접근성 스타일시트
+ * WCAG 2.1 AA 준수를 위한 CSS
+ */
+
+/* ============================================
+   스크린 리더 전용 클래스
+   ============================================ */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* 포커스 시 표시 */
+.sr-only-focusable:focus {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  padding: inherit !important;
+  margin: inherit !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: normal !important;
+}
+
+/* ============================================
+   Skip to Content 링크
+   ============================================ */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #2196F3;
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 10000;
+  border-radius: 0 0 4px 0;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* ============================================
+   포커스 스타일 (키보드 네비게이션)
+   ============================================ */
+:focus {
+  outline: 3px solid #2196F3;
+  outline-offset: 2px;
+}
+
+/* 마우스 사용 시 포커스 제거 */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* 키보드 포커스만 표시 */
+:focus-visible {
+  outline: 3px solid #2196F3;
+  outline-offset: 2px;
+}
+
+/* 버튼 포커스 */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 3px solid #2196F3;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+}
+
+/* 입력 필드 포커스 */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid #2196F3;
+  outline-offset: 0;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+}
+
+/* ============================================
+   고대비 모드
+   ============================================ */
+@media (prefers-contrast: high) {
+  /* 경계선 강화 */
+  * {
+    border-width: 2px !important;
+  }
+
+  /* 텍스트 대비 강화 */
+  body {
+    color: #000000;
+    background-color: #ffffff;
+  }
+
+  /* 링크 강화 */
+  a {
+    color: #0000EE;
+    text-decoration: underline;
+  }
+
+  a:visited {
+    color: #551A8B;
+  }
+
+  /* 버튼 강화 */
+  button,
+  [role="button"] {
+    border: 2px solid #000000 !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  button:hover,
+  [role="button"]:hover {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+
+  /* 선택된 항목 */
+  [aria-selected="true"],
+  [aria-current="page"] {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+}
+
+/* ============================================
+   다크 모드
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  /* 다크 모드 색상 */
+  :root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --border-color: #404040;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  /* 포커스 스타일 조정 */
+  :focus-visible {
+    outline-color: #64B5F6;
+  }
+}
+
+/* ============================================
+   애니메이션 감소 모드
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  /* 모든 애니메이션 제거 */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* 스크롤 애니메이션 제거 */
+  html {
+    scroll-behavior: auto;
+  }
+
+  /* 로딩 스피너 정적 표시 */
+  .spinner {
+    animation: none !important;
+  }
+}
+
+/* ============================================
+   큰 텍스트 모드
+   ============================================ */
+.text-size-large {
+  font-size: 18px;
+}
+
+.text-size-large h1 { font-size: 2.5em; }
+.text-size-large h2 { font-size: 2em; }
+.text-size-large h3 { font-size: 1.75em; }
+.text-size-large h4 { font-size: 1.5em; }
+.text-size-large h5 { font-size: 1.25em; }
+.text-size-large h6 { font-size: 1.1em; }
+
+.text-size-extra-large {
+  font-size: 20px;
+}
+
+.text-size-extra-large h1 { font-size: 3em; }
+.text-size-extra-large h2 { font-size: 2.5em; }
+.text-size-extra-large h3 { font-size: 2em; }
+.text-size-extra-large h4 { font-size: 1.75em; }
+.text-size-extra-large h5 { font-size: 1.5em; }
+.text-size-extra-large h6 { font-size: 1.25em; }
+
+/* ============================================
+   최소 터치 영역 (모바일)
+   ============================================ */
+@media (pointer: coarse) {
+  /* 터치 타겟 최소 44x44px (WCAG 2.1) */
+  button,
+  a,
+  input[type="checkbox"],
+  input[type="radio"],
+  [role="button"],
+  [role="link"] {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 12px;
+  }
+
+  /* 체크박스/라디오 확대 */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* ============================================
+   에러 및 검증 스타일
+   ============================================ */
+.error-message {
+  color: #d32f2f;
+  font-weight: 500;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.error-message .error-icon {
+  margin-right: 8px;
+  font-size: 20px;
+}
+
+/* 에러 입력 필드 */
+input[aria-invalid="true"],
+textarea[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border-color: #d32f2f;
+  background-color: #ffebee;
+}
+
+/* 성공 상태 */
+.success-message {
+  color: #388e3c;
+  font-weight: 500;
+}
+
+input[aria-invalid="false"] {
+  border-color: #388e3c;
+  background-color: #e8f5e9;
+}
+
+/* ============================================
+   로딩 상태
+   ============================================ */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #2196F3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ============================================
+   프로그레스 바
+   ============================================ */
+.progress-container {
+  width: 100%;
+  margin: 16px 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 24px;
+  background-color: #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #2196F3;
+  transition: width 0.3s ease;
+}
+
+/* ============================================
+   테이블 접근성
+   ============================================ */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table caption {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+  text-align: left;
+  padding: 12px;
+}
+
+td {
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* 행 호버 */
+tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+/* 포커스 가능한 행 */
+tbody tr:focus-within {
+  outline: 2px solid #2196F3;
+  outline-offset: -2px;
+}
+
+/* ============================================
+   폼 접근성
+   ============================================ */
+fieldset {
+  border: 1px solid #e0e0e0;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+legend {
+  font-weight: bold;
+  padding: 0 8px;
+}
+
+label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+/* 필수 필드 표시 */
+.required::after {
+  content: " *";
+  color: #d32f2f;
+  font-weight: bold;
+}
+
+/* 도움말 텍스트 */
+.help-text {
+  font-size: 0.875em;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* ============================================
+   모달 및 다이얼로그
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* ============================================
+   알림 및 토스트
+   ============================================ */
+[role="alert"] {
+  padding: 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+[role="alert"].error {
+  background-color: #ffebee;
+  color: #d32f2f;
+  border-left: 4px solid #d32f2f;
+}
+
+[role="alert"].warning {
+  background-color: #fff3e0;
+  color: #f57c00;
+  border-left: 4px solid #f57c00;
+}
+
+[role="alert"].success {
+  background-color: #e8f5e9;
+  color: #388e3c;
+  border-left: 4px solid #388e3c;
+}
+
+[role="alert"].info {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border-left: 4px solid #1976d2;
+}
+
+/* ============================================
+   네비게이션 접근성
+   ============================================ */
+nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+nav a {
+  display: block;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: inherit;
+}
+
+nav a:hover {
+  background-color: #f5f5f5;
+}
+
+nav a[aria-current="page"] {
+  background-color: #e3f2fd;
+  font-weight: bold;
+  border-left: 4px solid #2196F3;
+}
+
+/* ============================================
+   유틸리티 클래스
+   ============================================ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.focus-trap {
+  position: relative;
+}
+
+.keyboard-only {
+  display: none;
+}
+
+.keyboard-navigation .keyboard-only {
+  display: block;
+}

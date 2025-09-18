@@ -1,0 +1,1218 @@
+openapi: 3.0.3
+info:
+  title: DOT Platform API
+  description: |
+    DOT 플랫폼 REST API 문서
+
+    식음료 사업장을 위한 종합 운영 관리 시스템 API입니다.
+    근태관리, 스케줄링, 급여관리 기능을 제공합니다.
+
+    ## 인증
+    모든 API는 JWT 토큰 기반 인증을 사용합니다.
+    로그인 후 받은 토큰을 Authorization 헤더에 포함시켜 요청하세요.
+
+    ## Rate Limiting
+    - 인증된 사용자: 분당 100회
+    - 비인증 사용자: 분당 20회
+
+    ## 에러 코드
+    - 400: 잘못된 요청
+    - 401: 인증 실패
+    - 403: 권한 없음
+    - 404: 리소스 없음
+    - 429: 요청 한도 초과
+    - 500: 서버 오류
+
+  version: 0.1.0
+  contact:
+    name: DOT Platform Support
+    email: support@dotplatform.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000/api/v1
+    description: 개발 서버
+  - url: https://api.dotplatform.com/v1
+    description: 프로덕션 서버
+
+tags:
+  - name: Auth
+    description: 인증 관련 API
+  - name: Users
+    description: 사용자 관리 API
+  - name: Businesses
+    description: 사업장 관리 API
+  - name: Attendance
+    description: 근태 관리 API
+  - name: Schedules
+    description: 스케줄 관리 API
+  - name: Payroll
+    description: 급여 관리 API
+  - name: Documents
+    description: 문서 관리 API
+  - name: Notifications
+    description: 알림 관리 API
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ============================================
+  # 인증 (Auth)
+  # ============================================
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: 회원가입
+      description: 새로운 사용자 등록 (Owner, Worker, Seeker)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - phone
+                - userType
+              properties:
+                name:
+                  type: string
+                  example: "김철수"
+                email:
+                  type: string
+                  format: email
+                  example: "kim@example.com"
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: "SecurePass123!"
+                phone:
+                  type: string
+                  pattern: "^010-\\d{4}-\\d{4}$"
+                  example: "010-1234-5678"
+                userType:
+                  type: string
+                  enum: [owner, worker, seeker]
+                  example: "owner"
+                businessInfo:
+                  type: object
+                  description: Owner 타입일 경우 필수
+                  properties:
+                    name:
+                      type: string
+                      example: "맛있는 레스토랑"
+                    registrationNumber:
+                      type: string
+                      example: "123-45-67890"
+                    businessType:
+                      type: string
+                      example: "restaurant"
+                    address:
+                      type: string
+                      example: "서울시 강남구 테헤란로 123"
+      responses:
+        201:
+          description: 회원가입 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "회원가입이 완료되었습니다"
+                  data:
+                    type: object
+                    properties:
+                      userId:
+                        type: integer
+                        example: 123
+                      email:
+                        type: string
+                        example: "kim@example.com"
+        400:
+          $ref: '#/components/responses/BadRequest'
+        409:
+          $ref: '#/components/responses/Conflict'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 로그인
+      description: 이메일과 비밀번호로 로그인
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "kim@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "SecurePass123!"
+      responses:
+        200:
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIs..."
+                      refreshToken:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIs..."
+                      user:
+                        $ref: '#/components/schemas/User'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: 로그아웃
+      description: 현재 세션 종료
+      responses:
+        200:
+          description: 로그아웃 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "로그아웃되었습니다"
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: 토큰 갱신
+      description: Refresh 토큰으로 새로운 Access 토큰 발급
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIs..."
+      responses:
+        200:
+          description: 토큰 갱신 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIs..."
+
+  # ============================================
+  # 사용자 (Users)
+  # ============================================
+  /users/profile:
+    get:
+      tags: [Users]
+      summary: 내 프로필 조회
+      description: 현재 로그인한 사용자의 프로필 정보 조회
+      responses:
+        200:
+          description: 프로필 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+
+    put:
+      tags: [Users]
+      summary: 프로필 수정
+      description: 사용자 프로필 정보 수정
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "김철수"
+                phone:
+                  type: string
+                  example: "010-1234-5678"
+                profileImage:
+                  type: string
+                  format: uri
+                  example: "https://example.com/profile.jpg"
+      responses:
+        200:
+          description: 프로필 수정 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "프로필이 수정되었습니다"
+
+  /users/change-password:
+    post:
+      tags: [Users]
+      summary: 비밀번호 변경
+      description: 현재 비밀번호 확인 후 새 비밀번호로 변경
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                  example: "OldPass123!"
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: "NewPass123!"
+      responses:
+        200:
+          description: 비밀번호 변경 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "비밀번호가 변경되었습니다"
+
+  # ============================================
+  # 근태 (Attendance)
+  # ============================================
+  /attendance/checkin:
+    post:
+      tags: [Attendance]
+      summary: 출근 체크인
+      description: GPS 또는 QR 코드로 출근 처리
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: [gps, qr]
+                  example: "gps"
+                location:
+                  type: object
+                  description: GPS 체크인 시 필수
+                  properties:
+                    latitude:
+                      type: number
+                      format: double
+                      example: 37.5665
+                    longitude:
+                      type: number
+                      format: double
+                      example: 126.9780
+                    accuracy:
+                      type: number
+                      example: 10
+                qrCode:
+                  type: string
+                  description: QR 체크인 시 필수
+                  example: "QR123456789"
+      responses:
+        200:
+          description: 체크인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "출근 처리되었습니다"
+                  data:
+                    type: object
+                    properties:
+                      attendanceId:
+                        type: integer
+                        example: 456
+                      checkInTime:
+                        type: string
+                        format: date-time
+                        example: "2024-01-15T09:00:00Z"
+        400:
+          description: 잘못된 위치 또는 QR 코드
+        409:
+          description: 이미 출근한 상태
+
+  /attendance/checkout:
+    post:
+      tags: [Attendance]
+      summary: 퇴근 체크아웃
+      description: GPS 또는 QR 코드로 퇴근 처리
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: [gps, qr]
+                  example: "gps"
+                location:
+                  type: object
+                  properties:
+                    latitude:
+                      type: number
+                      format: double
+                      example: 37.5665
+                    longitude:
+                      type: number
+                      format: double
+                      example: 126.9780
+                qrCode:
+                  type: string
+                  example: "QR987654321"
+      responses:
+        200:
+          description: 체크아웃 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "퇴근 처리되었습니다"
+                  data:
+                    type: object
+                    properties:
+                      checkOutTime:
+                        type: string
+                        format: date-time
+                        example: "2024-01-15T18:00:00Z"
+                      workHours:
+                        type: number
+                        example: 9
+                      overtime:
+                        type: number
+                        example: 1
+
+  /attendance/history:
+    get:
+      tags: [Attendance]
+      summary: 근태 이력 조회
+      description: 특정 기간의 근태 이력 조회
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2024-01-31"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            example: 20
+      responses:
+        200:
+          description: 이력 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      records:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AttendanceRecord'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+  # ============================================
+  # 스케줄 (Schedules)
+  # ============================================
+  /schedules:
+    get:
+      tags: [Schedules]
+      summary: 스케줄 목록 조회
+      description: 내 스케줄 또는 팀 스케줄 조회
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2024-01-15"
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2024-01-21"
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [personal, team]
+            default: personal
+            example: "personal"
+      responses:
+        200:
+          description: 스케줄 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Schedule'
+
+    post:
+      tags: [Schedules]
+      summary: 스케줄 생성
+      description: 새로운 스케줄 생성 (Manager 이상)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleCreate'
+      responses:
+        201:
+          description: 스케줄 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "스케줄이 생성되었습니다"
+                  data:
+                    type: object
+                    properties:
+                      scheduleId:
+                        type: integer
+                        example: 789
+
+  /schedules/{scheduleId}:
+    parameters:
+      - name: scheduleId
+        in: path
+        required: true
+        schema:
+          type: integer
+          example: 789
+
+    get:
+      tags: [Schedules]
+      summary: 스케줄 상세 조회
+      description: 특정 스케줄의 상세 정보 조회
+      responses:
+        200:
+          description: 스케줄 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Schedule'
+
+    put:
+      tags: [Schedules]
+      summary: 스케줄 수정
+      description: 스케줄 정보 수정 (Manager 이상)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleUpdate'
+      responses:
+        200:
+          description: 스케줄 수정 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "스케줄이 수정되었습니다"
+
+    delete:
+      tags: [Schedules]
+      summary: 스케줄 삭제
+      description: 스케줄 삭제 (Manager 이상)
+      responses:
+        200:
+          description: 스케줄 삭제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "스케줄이 삭제되었습니다"
+
+  /schedules/swap:
+    post:
+      tags: [Schedules]
+      summary: 스케줄 교대 요청
+      description: 다른 직원과 스케줄 교대 요청
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fromScheduleId
+                - toUserId
+                - reason
+              properties:
+                fromScheduleId:
+                  type: integer
+                  example: 789
+                toUserId:
+                  type: integer
+                  example: 456
+                reason:
+                  type: string
+                  example: "개인 사정으로 교대 요청합니다"
+      responses:
+        201:
+          description: 교대 요청 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "교대 요청이 전송되었습니다"
+                  data:
+                    type: object
+                    properties:
+                      swapRequestId:
+                        type: integer
+                        example: 101
+
+  # ============================================
+  # 급여 (Payroll)
+  # ============================================
+  /payroll/statements:
+    get:
+      tags: [Payroll]
+      summary: 급여명세서 목록 조회
+      description: 내 급여명세서 목록 조회
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 2024
+        - name: month
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 1
+      responses:
+        200:
+          description: 급여명세서 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PayStatement'
+
+  /payroll/statements/{statementId}:
+    parameters:
+      - name: statementId
+        in: path
+        required: true
+        schema:
+          type: integer
+          example: 999
+
+    get:
+      tags: [Payroll]
+      summary: 급여명세서 상세 조회
+      description: 특정 급여명세서의 상세 내역 조회
+      responses:
+        200:
+          description: 급여명세서 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/PayStatementDetail'
+
+  /payroll/calculate:
+    post:
+      tags: [Payroll]
+      summary: 급여 계산
+      description: 특정 기간의 급여 계산 (Manager 이상)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - startDate
+                - endDate
+              properties:
+                userId:
+                  type: integer
+                  example: 123
+                startDate:
+                  type: string
+                  format: date
+                  example: "2024-01-01"
+                endDate:
+                  type: string
+                  format: date
+                  example: "2024-01-31"
+      responses:
+        200:
+          description: 급여 계산 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      basicPay:
+                        type: number
+                        example: 2500000
+                      overtimePay:
+                        type: number
+                        example: 300000
+                      deductions:
+                        type: number
+                        example: 250000
+                      netPay:
+                        type: number
+                        example: 2550000
+
+components:
+  # ============================================
+  # Security Schemes
+  # ============================================
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Authorization: Bearer {token}'
+
+  # ============================================
+  # Schemas
+  # ============================================
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        name:
+          type: string
+          example: "김철수"
+        email:
+          type: string
+          format: email
+          example: "kim@example.com"
+        phone:
+          type: string
+          example: "010-1234-5678"
+        role:
+          type: string
+          enum: [owner, manager, worker, seeker]
+          example: "owner"
+        businessId:
+          type: integer
+          nullable: true
+          example: 456
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    AttendanceRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 789
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        checkInTime:
+          type: string
+          format: time
+          example: "09:00:00"
+        checkOutTime:
+          type: string
+          format: time
+          nullable: true
+          example: "18:00:00"
+        status:
+          type: string
+          enum: [present, late, early_leave, absent]
+          example: "present"
+        workHours:
+          type: number
+          example: 9
+        overtimeHours:
+          type: number
+          example: 1
+        checkInMethod:
+          type: string
+          enum: [gps, qr, manual]
+          example: "gps"
+
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 789
+        businessId:
+          type: integer
+          example: 456
+        userId:
+          type: integer
+          example: 123
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        startTime:
+          type: string
+          format: time
+          example: "09:00:00"
+        endTime:
+          type: string
+          format: time
+          example: "18:00:00"
+        breakMinutes:
+          type: integer
+          example: 60
+        status:
+          type: string
+          enum: [scheduled, confirmed, completed, cancelled]
+          example: "scheduled"
+        notes:
+          type: string
+          nullable: true
+          example: "오전 회의 참석 필요"
+
+    ScheduleCreate:
+      type: object
+      required:
+        - userId
+        - date
+        - startTime
+        - endTime
+      properties:
+        userId:
+          type: integer
+          example: 123
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        startTime:
+          type: string
+          format: time
+          example: "09:00:00"
+        endTime:
+          type: string
+          format: time
+          example: "18:00:00"
+        breakMinutes:
+          type: integer
+          default: 60
+          example: 60
+        isRecurring:
+          type: boolean
+          default: false
+          example: false
+        recurrencePattern:
+          type: string
+          enum: [daily, weekly, monthly]
+          example: "weekly"
+        recurrenceEndDate:
+          type: string
+          format: date
+          example: "2024-12-31"
+
+    ScheduleUpdate:
+      type: object
+      properties:
+        startTime:
+          type: string
+          format: time
+          example: "10:00:00"
+        endTime:
+          type: string
+          format: time
+          example: "19:00:00"
+        breakMinutes:
+          type: integer
+          example: 60
+        notes:
+          type: string
+          example: "시간 변경됨"
+
+    PayStatement:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 999
+        userId:
+          type: integer
+          example: 123
+        payPeriodStart:
+          type: string
+          format: date
+          example: "2024-01-01"
+        payPeriodEnd:
+          type: string
+          format: date
+          example: "2024-01-31"
+        totalAmount:
+          type: number
+          example: 2550000
+        status:
+          type: string
+          enum: [pending, approved, paid]
+          example: "approved"
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-02-05T10:00:00Z"
+
+    PayStatementDetail:
+      allOf:
+        - $ref: '#/components/schemas/PayStatement'
+        - type: object
+          properties:
+            breakdown:
+              type: object
+              properties:
+                basicPay:
+                  type: number
+                  example: 2500000
+                overtimePay:
+                  type: number
+                  example: 300000
+                holidayPay:
+                  type: number
+                  example: 0
+                nightPay:
+                  type: number
+                  example: 0
+                allowances:
+                  type: number
+                  example: 100000
+                deductions:
+                  type: object
+                  properties:
+                    nationalPension:
+                      type: number
+                      example: 112500
+                    healthInsurance:
+                      type: number
+                      example: 87500
+                    employmentInsurance:
+                      type: number
+                      example: 22500
+                    incomeTax:
+                      type: number
+                      example: 125000
+                netPay:
+                  type: number
+                  example: 2550000
+            workSummary:
+              type: object
+              properties:
+                totalDays:
+                  type: integer
+                  example: 22
+                totalHours:
+                  type: number
+                  example: 176
+                overtimeHours:
+                  type: number
+                  example: 10
+                holidayHours:
+                  type: number
+                  example: 0
+                nightHours:
+                  type: number
+                  example: 0
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 5
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "INVALID_REQUEST"
+            message:
+              type: string
+              example: "요청이 잘못되었습니다"
+            details:
+              type: object
+              additionalProperties: true
+
+  # ============================================
+  # Responses
+  # ============================================
+  responses:
+    BadRequest:
+      description: 잘못된 요청
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "VALIDATION_ERROR"
+              message: "입력값이 올바르지 않습니다"
+              details:
+                email: "이메일 형식이 올바르지 않습니다"
+
+    Unauthorized:
+      description: 인증 실패
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "UNAUTHORIZED"
+              message: "인증이 필요합니다"
+
+    Forbidden:
+      description: 권한 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "FORBIDDEN"
+              message: "해당 작업을 수행할 권한이 없습니다"
+
+    NotFound:
+      description: 리소스를 찾을 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "요청한 리소스를 찾을 수 없습니다"
+
+    Conflict:
+      description: 충돌 발생
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "CONFLICT"
+              message: "이미 존재하는 리소스입니다"
+
+    InternalServerError:
+      description: 서버 내부 오류
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "INTERNAL_ERROR"
+              message: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요"

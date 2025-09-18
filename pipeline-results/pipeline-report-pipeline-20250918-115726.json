@@ -1,0 +1,44 @@
+{
+    "pipeline_execution": {
+        "pipeline_id": "pipeline-20250918-115726",
+        "start_time": "2025-09-18T11:57:26Z",
+        "end_time": "2025-09-18T11:57:26Z",
+        "total_duration": 0,
+        "mode": "quick",
+        "target_stage": "",
+        "configuration": {
+            "timeout": 3600,
+            "stage_timeout": 900,
+            "retry_count": 3,
+            "retry_delay": 30,
+            "parallel_execution": false,
+            "continue_on_error": false
+        }
+    },
+    "stages": {"1": {"name": "전제조건 검증","status": "dry-run","duration": 0,"start_time": "2025-09-18T11:57:26Z"},"2": {"name": "시스템 검증","status": "dry-run","duration": 0,"start_time": "2025-09-18T11:57:26Z"},"3": {"name": "배포 검증","status": "dry-run","duration": 0,"start_time": "2025-09-18T11:57:26Z"},"4": {"name": "한국어 요구사항 검증","status": "dry-run","duration": 0,"start_time": "2025-09-18T11:57:26Z"},"5": {"name": "성능 벤치마크","status": "dry-run","duration": 0,"start_time": "2025-09-18T11:57:26Z"},"6": {"name": "롤백 절차 검증","status": "dry-run","duration": 0,"start_time": "2025-09-18T11:57:26Z"},"7": {"name": "수동 테스트 자동화","status": "dry-run","duration": 0,"start_time": "2025-09-18T11:57:26Z"},"8": {"name": "결과 리포팅","status": "dry-run","duration": 0,"start_time": "2025-09-18T11:57:26Z"},"9": {"name": "최종 검증","status": "dry-run","duration": 0,"start_time": "2025-09-18T11:57:26Z"}},
+    "summary": {
+        "total_stages": 9,
+        "successful_stages": 0,
+        "failed_stages": 0,
+        "success_rate": 0,
+        "failed_stage_numbers": [
+  ""
+],
+        "successful_stage_numbers": [
+  ""
+]
+    },
+    "artifacts": {
+        "log_file": "/home/ec2-user/DOT-V0.1/logs/pipeline/pipeline-pipeline-20250918-115726.log",
+        "results_directory": "/home/ec2-user/DOT-V0.1/pipeline-results",
+        "validation_logs": "/home/ec2-user/DOT-V0.1/logs/validation",
+        "benchmark_results": "/home/ec2-user/DOT-V0.1/benchmarks/results",
+        "reports": "/home/ec2-user/DOT-V0.1/reports"
+    },
+    "korean_requirements_compliance": {
+        "response_time_target": "< 3초",
+        "concurrent_users_target": "10명",
+        "encoding_support": "UTF-8",
+        "validation_status": "FAIL"
+    }
+}

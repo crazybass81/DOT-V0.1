@@ -1,0 +1,8 @@
+
+          /\      |‾‾| /‾‾/   /‾‾/   
+     /\  /  \     |  |/  /   /  /    
+    /  \/    \    |     (   /   ‾‾\  
+   /          \   |  |\  \ |  (‾)  | 
+  / __________ \  |__| \__\ \_____/ .io
+
+time="2025-09-18T11:50:09Z" level=error msg="The moduleSpecifier \"/home/ec2-user/DOT-V0.1/benchmarks/scripts/korean-requirements.js\" couldn't be found on local disk. Make sure that you've specified the right path to the file. If you're running k6 using the Docker image make sure you have mounted the local directory (-v /local/path/:/inside/docker/path) containing your script and modules so that they're accessible by k6 from inside of the container, see https://k6.io/docs/using-k6/modules#using-local-modules-with-docker."

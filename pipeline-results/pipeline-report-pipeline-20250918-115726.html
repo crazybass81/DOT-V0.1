@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOT Platform 배포 검증 파이프라인 리포트</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 2px solid #007acc; padding-bottom: 20px; margin-bottom: 30px; }
+        .header h1 { color: #007acc; margin: 0; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .summary-card { background: #f8f9fa; padding: 20px; border-radius: 6px; text-align: center; border-left: 4px solid #007acc; }
+        .summary-card h3 { margin: 0 0 10px 0; color: #333; }
+        .summary-card .value { font-size: 2em; font-weight: bold; color: #007acc; }
+        .stages { margin-bottom: 30px; }
+        .stage { background: #f8f9fa; margin: 10px 0; padding: 15px; border-radius: 6px; border-left: 4px solid #28a745; }
+        .stage.failed { border-left-color: #dc3545; }
+        .stage.not_executed { border-left-color: #6c757d; }
+        .stage-header { display: flex; justify-content: between; align-items: center; }
+        .stage-name { font-weight: bold; font-size: 1.1em; }
+        .stage-status { padding: 4px 12px; border-radius: 20px; color: white; font-size: 0.9em; }
+        .status-success { background-color: #28a745; }
+        .status-failed { background-color: #dc3545; }
+        .status-not_executed { background-color: #6c757d; }
+        .korean-requirements { background: #e7f3ff; padding: 20px; border-radius: 6px; border: 1px solid #007acc; }
+        .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 DOT Platform 배포 검증 파이프라인 리포트</h1>
+            <p>파이프라인 ID: pipeline-20250918-115726</p>
+            <p>실행 시간: 2025년 09월 18일 11:57:26</p>
+        </div>
+
+        <div class="summary">
+            <div class="summary-card">
+                <h3>전체 단계</h3>
+                <div class="value">9</div>
+            </div>
+            <div class="summary-card">
+                <h3>성공한 단계</h3>
+                <div class="value">0</div>
+            </div>
+            <div class="summary-card">
+                <h3>실패한 단계</h3>
+                <div class="value">0</div>
+            </div>
+            <div class="summary-card">
+                <h3>성공률</h3>
+                <div class="value">0%</div>
+            </div>
+        </div>
+
+        <div class="stages">
+            <h2>📋 단계별 실행 결과</h2>
+            <div class="stage dry-run">
+                <div class="stage-header">
+                    <span class="stage-name">단계 1: 전제조건 검증</span>
+                    <span class="stage-status status-dry-run">시뮬레이션</span>
+                </div>
+                <div>소요 시간: 0초</div>
+            </div>
+            <div class="stage dry-run">
+                <div class="stage-header">
+                    <span class="stage-name">단계 2: 시스템 검증</span>
+                    <span class="stage-status status-dry-run">시뮬레이션</span>
+                </div>
+                <div>소요 시간: 0초</div>
+            </div>
+            <div class="stage dry-run">
+                <div class="stage-header">
+                    <span class="stage-name">단계 3: 배포 검증</span>
+                    <span class="stage-status status-dry-run">시뮬레이션</span>
+                </div>
+                <div>소요 시간: 0초</div>
+            </div>
+            <div class="stage dry-run">
+                <div class="stage-header">
+                    <span class="stage-name">단계 4: 한국어 요구사항 검증</span>
+                    <span class="stage-status status-dry-run">시뮬레이션</span>
+                </div>
+                <div>소요 시간: 0초</div>
+            </div>
+            <div class="stage dry-run">
+                <div class="stage-header">
+                    <span class="stage-name">단계 5: 성능 벤치마크</span>
+                    <span class="stage-status status-dry-run">시뮬레이션</span>
+                </div>
+                <div>소요 시간: 0초</div>
+            </div>
+            <div class="stage dry-run">
+                <div class="stage-header">
+                    <span class="stage-name">단계 6: 롤백 절차 검증</span>
+                    <span class="stage-status status-dry-run">시뮬레이션</span>
+                </div>
+                <div>소요 시간: 0초</div>
+            </div>
+            <div class="stage dry-run">
+                <div class="stage-header">
+                    <span class="stage-name">단계 7: 수동 테스트 자동화</span>
+                    <span class="stage-status status-dry-run">시뮬레이션</span>
+                </div>
+                <div>소요 시간: 0초</div>
+            </div>
+            <div class="stage dry-run">
+                <div class="stage-header">
+                    <span class="stage-name">단계 8: 결과 리포팅</span>
+                    <span class="stage-status status-dry-run">시뮬레이션</span>
+                </div>
+                <div>소요 시간: 0초</div>
+            </div>
+            <div class="stage dry-run">
+                <div class="stage-header">
+                    <span class="stage-name">단계 9: 최종 검증</span>
+                    <span class="stage-status status-dry-run">시뮬레이션</span>
+                </div>
+                <div>소요 시간: 0초</div>
+            </div>
+        </div>
+
+        <div class="korean-requirements">
+            <h2>🇰🇷 한국어 요구사항 준수 현황</h2>
+            <ul>
+                <li><strong>페이지 로딩 시간:</strong> < 3초 목표</li>
+                <li><strong>동시 사용자 지원:</strong> 10명 목표</li>
+                <li><strong>인코딩 지원:</strong> UTF-8</li>
+                <li><strong>검증 상태:</strong> ❌ 실패</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>Generated by DOT Platform 배포 검증 파이프라인 v1.0.0</p>
+            <p>상세 로그: /home/ec2-user/DOT-V0.1/logs/pipeline/pipeline-pipeline-20250918-115726.log</p>
+            <p>JSON 리포트: /home/ec2-user/DOT-V0.1/pipeline-results/pipeline-report-pipeline-20250918-115726.json</p>
+        </div>
+    </div>
+</body>
+</html>

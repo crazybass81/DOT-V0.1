@@ -1,0 +1,262 @@
+{
+  "app": {
+    "name": "DOT平台",
+    "title": "DOT - 餐厅管理系统",
+    "subtitle": "智能餐厅运营的综合解决方案"
+  },
+  "navigation": {
+    "home": "首页",
+    "dashboard": "仪表盘",
+    "attendance": "考勤",
+    "schedule": "排班",
+    "payroll": "薪资",
+    "employees": "员工管理",
+    "settings": "设置",
+    "profile": "个人资料",
+    "logout": "退出登录"
+  },
+  "auth": {
+    "login": {
+      "title": "登录",
+      "email": "邮箱",
+      "password": "密码",
+      "rememberMe": "记住我",
+      "forgotPassword": "忘记密码？",
+      "submit": "登录",
+      "noAccount": "还没有账户？",
+      "signUp": "注册"
+    },
+    "signup": {
+      "title": "注册",
+      "businessName": "企业名称",
+      "ownerName": "负责人姓名",
+      "email": "邮箱",
+      "password": "密码",
+      "confirmPassword": "确认密码",
+      "phone": "电话",
+      "address": "地址",
+      "submit": "注册",
+      "hasAccount": "已有账户？",
+      "login": "登录"
+    },
+    "errors": {
+      "invalidCredentials": "邮箱或密码不正确。",
+      "emailRequired": "请输入邮箱。",
+      "passwordRequired": "请输入密码。",
+      "passwordMismatch": "密码不匹配。",
+      "emailInvalid": "请输入有效的邮箱格式。",
+      "passwordTooShort": "密码必须至少8个字符。"
+    }
+  },
+  "dashboard": {
+    "title": "仪表盘",
+    "welcomeMessage": "您好，{{name}}！",
+    "todayStats": "今日概况",
+    "totalEmployees": "员工总数",
+    "presentToday": "今日出勤",
+    "absentToday": "今日缺勤",
+    "lateToday": "今日迟到",
+    "recentActivities": "最近活动",
+    "upcomingSchedules": "即将到来的排班",
+    "quickActions": "快速操作",
+    "viewAll": "查看全部"
+  },
+  "attendance": {
+    "title": "考勤管理",
+    "clockIn": "上班打卡",
+    "clockOut": "下班打卡",
+    "breakStart": "休息开始",
+    "breakEnd": "休息结束",
+    "status": {
+      "present": "出勤",
+      "absent": "缺勤",
+      "late": "迟到",
+      "earlyLeave": "早退",
+      "onBreak": "休息中"
+    },
+    "todayRecord": "今日记录",
+    "workingHours": "工作时长",
+    "breakTime": "休息时间",
+    "overtime": "加班",
+    "history": "考勤记录",
+    "filter": {
+      "thisWeek": "本周",
+      "thisMonth": "本月",
+      "lastMonth": "上月",
+      "custom": "自定义时间"
+    }
+  },
+  "schedule": {
+    "title": "排班管理",
+    "mySchedule": "我的排班",
+    "teamSchedule": "团队排班",
+    "addShift": "添加班次",
+    "editShift": "编辑班次",
+    "deleteShift": "删除班次",
+    "shiftTypes": {
+      "morning": "早班",
+      "afternoon": "午班",
+      "evening": "晚班",
+      "night": "夜班",
+      "dayOff": "休息"
+    },
+    "recurring": "重复设置",
+    "oneTime": "单次",
+    "repeatOptions": {
+      "daily": "每天",
+      "weekly": "每周",
+      "biweekly": "双周",
+      "monthly": "每月"
+    }
+  },
+  "payroll": {
+    "title": "薪资管理",
+    "monthlySalary": "月薪",
+    "hourlySalary": "时薪",
+    "totalWorkHours": "总工作时长",
+    "regularHours": "正常工时",
+    "overtimeHours": "加班时长",
+    "baseSalary": "基本工资",
+    "overtimePay": "加班费",
+    "allowances": "津贴",
+    "deductions": "扣除",
+    "netPay": "实发工资",
+    "payPeriod": "工资周期",
+    "payDate": "发薪日",
+    "payHistory": "薪资记录",
+    "generatePayslip": "生成工资条"
+  },
+  "employees": {
+    "title": "员工管理",
+    "addEmployee": "添加员工",
+    "editEmployee": "编辑员工",
+    "deleteEmployee": "删除员工",
+    "employeeInfo": "员工信息",
+    "personalInfo": "个人信息",
+    "workInfo": "工作信息",
+    "name": "姓名",
+    "email": "邮箱",
+    "phone": "电话",
+    "address": "地址",
+    "birthDate": "出生日期",
+    "hireDate": "入职日期",
+    "position": "职位",
+    "department": "部门",
+    "employmentType": {
+      "fullTime": "全职",
+      "partTime": "兼职",
+      "contract": "合同工",
+      "intern": "实习生"
+    },
+    "status": {
+      "active": "在职",
+      "inactive": "休职",
+      "terminated": "离职"
+    }
+  },
+  "settings": {
+    "title": "设置",
+    "general": "常规设置",
+    "business": "企业设置",
+    "workRules": "工作制度",
+    "notifications": "通知设置",
+    "integrations": "集成设置",
+    "security": "安全设置",
+    "language": "语言",
+    "theme": "主题",
+    "timezone": "时区",
+    "workingHours": "工作时间",
+    "breakTime": "休息时间",
+    "overtime": "加班",
+    "holidays": "节假日"
+  },
+  "common": {
+    "actions": {
+      "add": "添加",
+      "edit": "编辑",
+      "delete": "删除",
+      "save": "保存",
+      "cancel": "取消",
+      "confirm": "确认",
+      "submit": "提交",
+      "close": "关闭",
+      "search": "搜索",
+      "filter": "筛选",
+      "export": "导出",
+      "import": "导入",
+      "print": "打印",
+      "refresh": "刷新",
+      "reset": "重置"
+    },
+    "status": {
+      "active": "激活",
+      "inactive": "非激活",
+      "pending": "待处理",
+      "approved": "已批准",
+      "rejected": "已拒绝",
+      "completed": "已完成",
+      "cancelled": "已取消"
+    },
+    "messages": {
+      "loading": "加载中...",
+      "saving": "保存中...",
+      "saved": "保存成功。",
+      "deleted": "删除成功。",
+      "error": "发生错误。",
+      "success": "操作成功。",
+      "noData": "暂无数据。",
+      "confirmDelete": "确定要删除吗？",
+      "unsavedChanges": "您有未保存的更改。"
+    },
+    "time": {
+      "today": "今天",
+      "yesterday": "昨天",
+      "tomorrow": "明天",
+      "thisWeek": "本周",
+      "thisMonth": "本月",
+      "thisYear": "今年",
+      "lastWeek": "上周",
+      "lastMonth": "上月",
+      "lastYear": "去年",
+      "morning": "上午",
+      "afternoon": "下午",
+      "evening": "傍晚",
+      "night": "晚上"
+    },
+    "form": {
+      "required": "此字段为必填项。",
+      "invalid": "格式无效。",
+      "tooShort": "太短。",
+      "tooLong": "太长。",
+      "selectOption": "请选择一个选项。",
+      "enterValue": "请输入值。"
+    },
+    "table": {
+      "noResults": "未找到结果。",
+      "itemsPerPage": "每页条数",
+      "of": "共",
+      "items": "条",
+      "page": "页",
+      "next": "下一页",
+      "previous": "上一页",
+      "first": "首页",
+      "last": "末页"
+    }
+  },
+  "accessibility": {
+    "skipToContent": "跳转到主内容",
+    "menuToggle": "切换菜单",
+    "closeModal": "关闭弹窗",
+    "openMenu": "打开菜单",
+    "closeMenu": "关闭菜单",
+    "loading": "加载中",
+    "error": "错误",
+    "success": "成功",
+    "warning": "警告",
+    "info": "信息",
+    "expand": "展开",
+    "collapse": "收起",
+    "sortAscending": "升序排列",
+    "sortDescending": "降序排列"
+  }
+}

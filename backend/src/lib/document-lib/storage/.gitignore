@@ -1,0 +1,5 @@
+# 업로드된 문서들을 무시하되 디렉토리 구조는 유지
+# Ignore uploaded documents but keep directory structure
+*
+!.gitignore
+!documents/.gitkeep

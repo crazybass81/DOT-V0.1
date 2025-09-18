@@ -1,0 +1,26 @@
+{
+  "name": "schedule-lib",
+  "version": "1.0.0",
+  "description": "스케줄 관리 라이브러리 - 근무 일정 생성, 수정, 충돌 검증",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "schedule",
+    "shift",
+    "work",
+    "calendar"
+  ],
+  "author": "DOT Platform",
+  "license": "MIT",
+  "dependencies": {
+    "moment": "^2.29.4",
+    "moment-timezone": "^0.5.43"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0"
+  }
+}
