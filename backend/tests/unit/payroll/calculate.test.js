@@ -59,8 +59,8 @@ describe('급여 계산 라이브러리', () => {
         expect(result.summary).toHaveProperty('grossPay');
         expect(result.summary).toHaveProperty('netPay');
         expect(result.workHours.total).toBe(180); // 20일 × 9시간
-        expect(result.workHours.regular).toBe(180);
-        expect(result.workHours.overtime).toBe(0);
+        expect(result.workHours.regular).toBe(160); // 정규 근무시간
+        expect(result.workHours.overtime).toBe(20); // 초과 근무시간
       });
     });
   });
