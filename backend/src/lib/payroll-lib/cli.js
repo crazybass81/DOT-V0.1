@@ -50,8 +50,8 @@ payroll-lib CLI - 급여 계산 도구
 }
 
 function showVersion() {
-  const package = require('./package.json');
-  console.log(`payroll-lib v${package.version}`);
+  const pkg = require('./package.json');
+  console.log(`payroll-lib v${pkg.version}`);
 }
 
 function calculatePay(args) {
