@@ -1,0 +1,39 @@
+# Database and data files
+postgres-data/
+redis-data/
+*.db
+*.sqlite
+
+# Backend (Vercel은 frontend만 배포)
+backend/
+docker-compose*.yml
+Dockerfile*
+
+# Development files
+.git/
+.github/workflows/
+node_modules/
+*.log
+*.env
+*.env.*
+!.env.example
+
+# Test files
+tests/
+__tests__/
+*.test.*
+*.spec.*
+
+# Documentation
+docs/
+specs/
+*.md
+!README.md
+
+# Scripts
+scripts/
+*.sh
+
+# IDE
+.vscode/
+.idea/
