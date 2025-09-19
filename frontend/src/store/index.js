@@ -4,8 +4,6 @@
  */
 
 import { configureStore } from '@reduxjs/toolkit';
-import { persistStore, persistReducer } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
 import { combineReducers } from '@reduxjs/toolkit';
 
 // 리듀서 imports
@@ -15,23 +13,6 @@ import scheduleReducer from './slices/scheduleSlice';
 import notificationReducer from './slices/notificationSlice';
 import businessReducer from './slices/businessSlice';
 import uiReducer from './slices/uiSlice';
-
-// persist 설정
-const persistConfig = {
-  key: 'dot-platform',
-  version: 1,
-  storage,
-  whitelist: [
-    'auth',      // 인증 정보는 persist
-    'business',  // 현재 사업장 정보는 persist
-    'ui'         // UI 설정은 persist
-  ],
-  blacklist: [
-    'attendance',    // 근태 정보는 실시간으로 갱신
-    'schedule',      // 스케줄 정보는 실시간으로 갱신
-    'notification'   // 알림 정보는 실시간으로 갱신
-  ]
-};
 
 // 루트 리듀서 결합
 const rootReducer = combineReducers({
@@ -43,22 +24,11 @@ const rootReducer = combineReducers({
   ui: uiReducer,
 });
 
-// persist 리듀서 생성
-const persistedReducer = persistReducer(persistConfig, rootReducer);
-
 // 미들웨어 설정
 const middleware = (getDefaultMiddleware) =>
   getDefaultMiddleware({
     serializableCheck: {
-      // redux-persist 액션들은 직렬화 체크에서 제외
-      ignoredActions: [
-        'persist/PERSIST',
-        'persist/REHYDRATE',
-        'persist/PAUSE',
-        'persist/PURGE',
-        'persist/REGISTER',
-        'persist/FLUSH',
-      ],
+      // API 응답의 타임스탬프 등 비직렬화 데이터 처리
       ignoredActionsPaths: ['meta.arg', 'payload.timestamp'],
       ignoredPaths: ['items.dates'],
     },
@@ -75,13 +45,6 @@ export const store = configureStore({
   preloadedState: undefined,
 });
 
-// persistor 생성 - 일시 비활성화
-export const persistor = null; // persistStore(store);
-
-// TypeScript 타입 정의
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
-
 // 개발용 디버깅 함수 - window 의존성 제거
 if (process.env.NODE_ENV === 'development') {
   // 안전한 전역 디버깅 함수 제공
@@ -90,9 +53,9 @@ if (process.env.NODE_ENV === 'development') {
       window.DOT_STORE_DEBUG = {
         getState: () => store.getState(),
         dispatch: store.dispatch,
-        clearPersist: () => {
-          // persistor.purge(); // persist 비활성화됨
-          localStorage.clear(); // 대신 localStorage 직접 삭제
+        clearStorage: () => {
+          localStorage.clear();
+          sessionStorage.clear();
           window.location.reload();
         },
         // 각 슬라이스별 상태 조회 헬퍼
