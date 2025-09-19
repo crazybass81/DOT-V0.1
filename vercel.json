@@ -1,7 +1,6 @@
 {
   "name": "dot-platform",
   "version": 2,
-  "framework": "create-react-app",
   "builds": [
     {
       "src": "frontend/package.json",
@@ -9,16 +8,36 @@
       "config": {
         "distDir": "frontend/build"
       }
+    },
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api"
+    },
     {
       "src": "/(.*)",
       "dest": "/frontend/$1"
     }
   ],
+  "env": {
+    "NODE_ENV": "production",
+    "JWT_SECRET": "@jwt_secret",
+    "DATABASE_URL": "@database_url",
+    "REDIS_URL": "@redis_url"
+  },
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/build",
   "installCommand": "npm install",
-  "devCommand": "cd frontend && npm start"
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
+  "regions": ["icn1"]
 }
