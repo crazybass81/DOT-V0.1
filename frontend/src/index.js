@@ -16,7 +16,8 @@ import { store } from './store';
 import './index.css';
 
 // 한국 근로 환경에 최적화된 MUI 테마 설정
-const theme = createTheme({
+// Lazy initialization으로 초기화 순서 문제 해결
+const getTheme = () => createTheme({
   palette: {
     primary: {
       main: '#1976d2', // 파란색 - 신뢰성과 안정성을 표현
@@ -105,55 +106,71 @@ const theme = createTheme({
   },
 });
 
-// React 앱 초기화
-const root = ReactDOM.createRoot(document.getElementById('root'));
+// DOM이 준비된 후 React 앱 초기화
+const initApp = () => {
+  // theme 인스턴스 생성
+  const theme = getTheme();
 
-root.render(
-  <React.StrictMode>
-    <Provider store={store}>
-      <BrowserRouter>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <SnackbarProvider
-            maxSnack={3}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            autoHideDuration={5000}
-            preventDuplicate
-          >
-            <App />
-          </SnackbarProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </Provider>
-  </React.StrictMode>
-);
+  // React 앱 초기화
+  const root = ReactDOM.createRoot(document.getElementById('root'));
 
-// 개발 환경에서 성능 측정 도구 활성화
-if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
-  try {
-    // React DevTools Profiler 활성화
-    if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
-      const hook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
-      if (hook.reactDevtoolsAgent && hook.reactDevtoolsAgent.onCommitFiberRoot) {
-        hook.reactDevtoolsAgent.onCommitFiberRoot = (...args) => {
-          console.debug('React DevTools - Commit:', args);
-        };
+  root.render(
+    <React.StrictMode>
+      <Provider store={store}>
+        <BrowserRouter>
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <SnackbarProvider
+              maxSnack={3}
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              autoHideDuration={5000}
+              preventDuplicate
+            >
+              <App />
+            </SnackbarProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+      </Provider>
+    </React.StrictMode>
+  );
+
+  // 개발 환경 디버깅 설정을 여기로 이동
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    try {
+      // React DevTools Profiler 활성화
+      if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+        const hook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
+        if (hook.reactDevtoolsAgent && hook.reactDevtoolsAgent.onCommitFiberRoot) {
+          hook.reactDevtoolsAgent.onCommitFiberRoot = (...args) => {
+            console.debug('React DevTools - Commit:', args);
+          };
+        }
       }
-    }
 
-    // 개발용 전역 변수 설정
-    window.DOT_DEBUG = {
-      store,
-      theme,
-      version: process.env.REACT_APP_VERSION || '0.1.0',
-    };
-  } catch (e) {
-    console.warn('Debug tools not available:', e);
+      // 개발용 전역 변수 설정
+      window.DOT_DEBUG = {
+        store,
+        theme,
+        version: process.env.REACT_APP_VERSION || '0.1.0',
+      };
+    } catch (e) {
+      console.warn('Debug tools not available:', e);
+    }
   }
+};
+
+// DOM이 준비되면 앱 초기화
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  // 이미 DOM이 로드된 경우 즉시 실행
+  initApp();
 }
+
+// 중복 코드 제거 - initApp 함수 내부로 이동됨
 
 // 서비스 워커 등록 (PWA 지원 준비)
 if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
