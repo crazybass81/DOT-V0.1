@@ -66,7 +66,7 @@ const middleware = (getDefaultMiddleware) =>
     immutableCheck: process.env.NODE_ENV === 'development',
   });
 
-// 스토어 구성 - persist 일시 비활성화
+// 스토어 구성 - 초기화 문제 해결을 위해 단순화
 export const store = configureStore({
   reducer: rootReducer, // persistedReducer 대신 rootReducer 사용
   middleware,
@@ -82,33 +82,33 @@ export const persistor = null; // persistStore(store);
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
-// HMR 제거 - 프로덕션 빌드 문제 해결
-
-// 개발용 디버깅 함수
-if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
-  // 전역 디버깅 함수 제공 - window 존재 확인
+// 개발용 디버깅 함수 - window 의존성 제거
+if (process.env.NODE_ENV === 'development') {
+  // 안전한 전역 디버깅 함수 제공
   try {
-    window.DOT_STORE_DEBUG = {
-    getState: () => store.getState(),
-    dispatch: store.dispatch,
-    clearPersist: () => {
-      // persistor.purge(); // persist 비활성화됨
-      localStorage.clear(); // 대신 localStorage 직접 삭제
-      window.location.reload();
-    },
-    // 각 슬라이스별 상태 조회 헬퍼
-    getAuth: () => store.getState().auth,
-    getAttendance: () => store.getState().attendance,
-    getSchedule: () => store.getState().schedule,
-    getNotification: () => store.getState().notification,
-    getBusiness: () => store.getState().business,
-    getUI: () => store.getState().ui,
-    };
+    if (typeof window !== 'undefined') {
+      window.DOT_STORE_DEBUG = {
+        getState: () => store.getState(),
+        dispatch: store.dispatch,
+        clearPersist: () => {
+          // persistor.purge(); // persist 비활성화됨
+          localStorage.clear(); // 대신 localStorage 직접 삭제
+          window.location.reload();
+        },
+        // 각 슬라이스별 상태 조회 헬퍼
+        getAuth: () => store.getState().auth,
+        getAttendance: () => store.getState().attendance,
+        getSchedule: () => store.getState().schedule,
+        getNotification: () => store.getState().notification,
+        getBusiness: () => store.getState().business,
+        getUI: () => store.getState().ui,
+      };
 
-    console.log('DOT Platform Store initialized');
-    console.log('Available debug commands: window.DOT_STORE_DEBUG');
+      console.log('DOT Platform Store initialized');
+      console.log('Available debug commands: window.DOT_STORE_DEBUG');
+    }
   } catch (e) {
-    // window 접근 실패 시 무시
+    // window 접근 실패 시 무시 - SSR 환경 대응
     console.warn('Debug functions not available:', e);
   }
 }

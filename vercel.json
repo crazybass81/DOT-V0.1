@@ -1,12 +1,13 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm install --legacy-peer-deps && npm run build",
+  "buildCommand": "cd frontend && npm install --legacy-peer-deps && GENERATE_SOURCEMAP=false npm run build",
   "outputDirectory": "frontend/build",
   "framework": "create-react-app",
   "env": {
     "NODE_ENV": "production",
     "REACT_APP_API_URL": "http://100.25.70.173:3001",
-    "REACT_APP_SOCKET_URL": "ws://100.25.70.173:3001"
+    "REACT_APP_SOCKET_URL": "ws://100.25.70.173:3001",
+    "DISABLE_NEW_JSX_TRANSFORM": "true"
   },
   "rewrites": [
     {
@@ -15,5 +16,17 @@
     }
   ],
   "regions": ["icn1"],
-  "public": true
+  "public": true,
+  "functions": {
+    "frontend/build/**": {
+      "maxDuration": 30
+    }
+  },
+  "build": {
+    "env": {
+      "SKIP_PREFLIGHT_CHECK": "true",
+      "GENERATE_SOURCEMAP": "false",
+      "INLINE_RUNTIME_CHUNK": "false"
+    }
+  }
 }
