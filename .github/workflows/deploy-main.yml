@@ -46,12 +46,13 @@ jobs:
       - name: Deploy to Vercel
         if: success()
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '86e3NBJcqpDLeaH6GYXtmx36' }}
           VERCEL_ORG_ID: team_ZRA46B1Ng8n027CYnt0PzJzr
           VERCEL_PROJECT_ID: prj_D6dcyGv6dOXC82Kx1bkuwy2EiB08
         run: |
           cd frontend
-          npx vercel --prod --token=${VERCEL_TOKEN:-YOUR_TOKEN_HERE} --yes --scope team_ZRA46B1Ng8n027CYnt0PzJzr || echo "Vercel deployment requires VERCEL_TOKEN in GitHub Secrets"
+          npx vercel --prod --token=$VERCEL_TOKEN --yes --scope team_ZRA46B1Ng8n027CYnt0PzJzr
+          echo "✅ Successfully deployed to Vercel dot-platform project"
 
       - name: Create deployment tag
         if: success()

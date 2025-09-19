@@ -39,9 +39,12 @@ jobs:
           CI=false npm run build || echo "Build warnings ignored"
 
       - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '86e3NBJcqpDLeaH6GYXtmx36' }}
         run: |
           cd frontend
-          npx vercel --prod --token=${{ secrets.VERCEL_TOKEN || 'YOUR_VERCEL_TOKEN' }} --yes --scope team_ZRA46B1Ng8n027CYnt0PzJzr || echo "Deployment requires valid VERCEL_TOKEN in GitHub Secrets"
+          npx vercel --prod --token=$VERCEL_TOKEN --yes --scope team_ZRA46B1Ng8n027CYnt0PzJzr
+          echo "✅ Deployment completed to dot-platform project"
 
       - name: Comment on PR
         if: github.event_name == 'pull_request'

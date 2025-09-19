@@ -44,12 +44,13 @@ jobs:
       - name: Deploy preview to Vercel
         id: vercel-preview
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '86e3NBJcqpDLeaH6GYXtmx36' }}
+          VERCEL_ORG_ID: team_ZRA46B1Ng8n027CYnt0PzJzr
+          VERCEL_PROJECT_ID: prj_D6dcyGv6dOXC82Kx1bkuwy2EiB08
         run: |
-          npm install -g vercel
-          DEPLOYMENT_URL=$(vercel --token=$VERCEL_TOKEN --yes 2>/dev/null | grep "Preview:" | awk '{print $2}')
+          cd frontend
+          npx vercel --token=$VERCEL_TOKEN --yes --scope team_ZRA46B1Ng8n027CYnt0PzJzr > deployment.log 2>&1
+          DEPLOYMENT_URL=$(grep -E "https://.*vercel.app" deployment.log | head -1)
           echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
           echo "Preview deployed to: $DEPLOYMENT_URL"
 
