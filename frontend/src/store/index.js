@@ -66,17 +66,17 @@ const middleware = (getDefaultMiddleware) =>
     immutableCheck: process.env.NODE_ENV === 'development',
   });
 
-// 스토어 구성
+// 스토어 구성 - persist 일시 비활성화
 export const store = configureStore({
-  reducer: persistedReducer,
+  reducer: rootReducer, // persistedReducer 대신 rootReducer 사용
   middleware,
   devTools: process.env.NODE_ENV === 'development',
   // preloadedState는 SSR이나 초기 상태가 필요한 경우 사용
   preloadedState: undefined,
 });
 
-// persistor 생성
-export const persistor = persistStore(store);
+// persistor 생성 - 일시 비활성화
+export const persistor = null; // persistStore(store);
 
 // TypeScript 타입 정의
 export type RootState = ReturnType<typeof store.getState>;
@@ -92,7 +92,8 @@ if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
     getState: () => store.getState(),
     dispatch: store.dispatch,
     clearPersist: () => {
-      persistor.purge();
+      // persistor.purge(); // persist 비활성화됨
+      localStorage.clear(); // 대신 localStorage 직접 삭제
       window.location.reload();
     },
     // 각 슬라이스별 상태 조회 헬퍼
