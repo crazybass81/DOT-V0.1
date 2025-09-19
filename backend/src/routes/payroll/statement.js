@@ -6,7 +6,8 @@
 
 const express = require('express');
 const router = express.Router();
-const { authenticate, authorize } = require('../../middleware/auth');
+const { authenticate } = require('../../middleware/auth');
+const { authorize } = require('../../middleware/authorize');
 const pool = require('../../db');
 const logger = require('../../utils/logger');
 

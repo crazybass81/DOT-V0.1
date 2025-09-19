@@ -7,14 +7,14 @@ WORKDIR /app
 
 # 의존성 캐싱을 위해 package*.json만 먼저 복사
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # 소스코드 복사
 COPY . .
@@ -52,4 +52,4 @@ EXPOSE 3000
 ENV NODE_ENV=production
 
 # 실행 명령
-CMD ["node", "src/app.js"]
+CMD ["node", "src/server.js"]

@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../../db');
-const { authenticate, authorize } = require('../../middleware/auth');
+const { authenticate, requireRole } = require('../../middleware/auth');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
 const { generateQRCode, verifyQRCode } = require('../../lib/attendance-lib/qr');
@@ -18,7 +18,7 @@ const moment = require('moment-timezone');
  */
 router.post('/qr/generate',
   authenticate,
-  authorize(['owner', 'manager']),
+  requireRole(['owner', 'manager']),
   asyncHandler(async (req, res) => {
     const client = await pool.connect();
 
@@ -324,7 +324,7 @@ router.post('/qr/verify',
  */
 router.get('/qr/logs',
   authenticate,
-  authorize(['owner', 'manager']),
+  requireRole(['owner', 'manager']),
   asyncHandler(async (req, res) => {
     const client = await pool.connect();
 
