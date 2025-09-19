@@ -17,11 +17,6 @@
   ],
   "regions": ["icn1"],
   "public": true,
-  "functions": {
-    "frontend/build/**": {
-      "maxDuration": 30
-    }
-  },
   "build": {
     "env": {
       "SKIP_PREFLIGHT_CHECK": "true",
