@@ -132,23 +132,27 @@ root.render(
 );
 
 // 개발 환경에서 성능 측정 도구 활성화
-if (process.env.NODE_ENV === 'development') {
-  // React DevTools Profiler 활성화
-  if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
-    const hook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
-    if (hook.reactDevtoolsAgent && hook.reactDevtoolsAgent.onCommitFiberRoot) {
-      hook.reactDevtoolsAgent.onCommitFiberRoot = (...args) => {
-        console.debug('React DevTools - Commit:', args);
-      };
+if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+  try {
+    // React DevTools Profiler 활성화
+    if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+      const hook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
+      if (hook.reactDevtoolsAgent && hook.reactDevtoolsAgent.onCommitFiberRoot) {
+        hook.reactDevtoolsAgent.onCommitFiberRoot = (...args) => {
+          console.debug('React DevTools - Commit:', args);
+        };
+      }
     }
-  }
 
-  // 개발용 전역 변수 설정
-  window.DOT_DEBUG = {
-    store,
-    theme,
-    version: process.env.REACT_APP_VERSION || '0.1.0',
-  };
+    // 개발용 전역 변수 설정
+    window.DOT_DEBUG = {
+      store,
+      theme,
+      version: process.env.REACT_APP_VERSION || '0.1.0',
+    };
+  } catch (e) {
+    console.warn('Debug tools not available:', e);
+  }
 }
 
 // 서비스 워커 등록 (PWA 지원 준비)

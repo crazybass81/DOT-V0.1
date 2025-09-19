@@ -82,18 +82,13 @@ export const persistor = persistStore(store);
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
-// 개발 환경에서 HMR 지원
-if (process.env.NODE_ENV === 'development' && module.hot) {
-  module.hot.accept('./slices', () => {
-    const newRootReducer = require('./slices').default;
-    store.replaceReducer(persistReducer(persistConfig, newRootReducer));
-  });
-}
+// HMR 제거 - 프로덕션 빌드 문제 해결
 
 // 개발용 디버깅 함수
-if (process.env.NODE_ENV === 'development') {
-  // 전역 디버깅 함수 제공
-  window.DOT_STORE_DEBUG = {
+if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+  // 전역 디버깅 함수 제공 - window 존재 확인
+  try {
+    window.DOT_STORE_DEBUG = {
     getState: () => store.getState(),
     dispatch: store.dispatch,
     clearPersist: () => {
@@ -107,8 +102,12 @@ if (process.env.NODE_ENV === 'development') {
     getNotification: () => store.getState().notification,
     getBusiness: () => store.getState().business,
     getUI: () => store.getState().ui,
-  };
+    };
 
-  console.log('DOT Platform Store initialized');
-  console.log('Available debug commands: window.DOT_STORE_DEBUG');
+    console.log('DOT Platform Store initialized');
+    console.log('Available debug commands: window.DOT_STORE_DEBUG');
+  } catch (e) {
+    // window 접근 실패 시 무시
+    console.warn('Debug functions not available:', e);
+  }
 }
