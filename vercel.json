@@ -8,5 +8,11 @@
     "REACT_APP_API_URL": "http://100.25.70.173:3001",
     "REACT_APP_SOCKET_URL": "ws://100.25.70.173:3001"
   },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ],
   "regions": ["icn1"]
 }

@@ -65,11 +65,14 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
+      connectSrc: ["'self'", "http://100.25.70.173:3001", "http://localhost:3001", "ws://100.25.70.173:3001", "https://dot-platform-six.vercel.app"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
       imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'", "https:", "data:"],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 
 /**
