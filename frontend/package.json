@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false react-scripts build",
+    "build:vercel": "GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false DISABLE_NEW_JSX_TRANSFORM=true react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint src/",
@@ -86,5 +87,10 @@
     "payroll",
     "F&B"
   ],
-  "author": "DOT Team"
+  "author": "DOT Team",
+  "homepage": ".",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
 }

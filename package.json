@@ -18,7 +18,10 @@
     "docker:build": "docker-compose -f docker-compose.prod.yml build",
     "docker:up": "docker-compose -f docker-compose.prod.yml up -d",
     "docker:down": "docker-compose -f docker-compose.prod.yml down",
-    "health:check": "curl http://localhost:3000/health"
+    "health:check": "curl http://localhost:3000/health",
+    "vercel:deploy": "vercel --prod",
+    "vercel:dev": "vercel dev",
+    "vercel:pull": "vercel env pull .env.local"
   },
   "engines": {
     "node": ">=18.0.0",

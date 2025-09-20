@@ -50,8 +50,9 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          npm install -g vercel
-          vercel --prod --token=$VERCEL_TOKEN --yes || echo "Vercel deployment handled by GitHub integration"
+          cd frontend
+          npx vercel --prod --token=$VERCEL_TOKEN --yes --scope team_ZRA46B1Ng8n027CYnt0PzJzr
+          echo "✅ Successfully deployed to Vercel dot-platform project"
 
       - name: Create deployment tag
         if: success()

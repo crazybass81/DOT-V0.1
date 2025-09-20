@@ -7,14 +7,14 @@ WORKDIR /app
 
 # 의존성 캐싱을 위해 package*.json만 먼저 복사
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # 소스코드 복사
 COPY . .
@@ -30,8 +30,8 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# 필수 패키지 설치 (한글 지원 및 시간대)
-RUN apk add --no-cache tzdata
+# 필수 패키지 설치 (한글 지원, 시간대, curl for healthcheck)
+RUN apk add --no-cache tzdata curl tini
 ENV TZ=Asia/Seoul
 
 # Production 의존성 복사
@@ -41,15 +41,19 @@ COPY --chown=nodejs:nodejs . .
 # 사용자 전환
 USER nodejs
 
-# 헬스체크
+# 헬스체크 (포트 3001로 수정)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})"
+  CMD curl -f http://localhost:3001/health || exit 1
 
-# 포트 노출
-EXPOSE 3000
+# 포트 노출 (3001로 수정)
+EXPOSE 3001
 
 # 환경 변수
 ENV NODE_ENV=production
+ENV PORT=3001
+
+# Tini를 사용하여 시그널 처리 개선
+ENTRYPOINT ["/sbin/tini", "--"]
 
 # 실행 명령
-CMD ["node", "src/app.js"]
+CMD ["node", "src/server.js"]

@@ -5,7 +5,7 @@
 
 const app = require('./app');
 const { initDatabase } = require('./config/database');
-const { initRedis } = require('./config/redis');
+const redisClient = require('./config/redis');
 
 const PORT = process.env.PORT || 3000;
 
@@ -19,9 +19,11 @@ async function startServer() {
     await initDatabase();
     console.log('✅ PostgreSQL 연결 성공');
 
-    // Redis 연결 초기화
-    console.log('🔄 Redis 연결 중...');
-    await initRedis();
+    // Redis 연결 초기화 (이미 연결되어 있지 않은 경우만)
+    console.log('🔄 Redis 연결 확인 중...');
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
     console.log('✅ Redis 연결 성공');
 
     // 서버 시작

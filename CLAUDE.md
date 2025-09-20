@@ -4,128 +4,270 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a specification-driven development project utilizing the SuperClaude Framework with emphasis on Test-Driven Development (TDD). The project follows a structured approach where specifications are written before implementation.
+DOT Platform V0.1 - A comprehensive restaurant management system built with specification-driven development and Test-Driven Development (TDD). The platform supports multiple user roles (Owner, Worker, Seeker) with features including attendance tracking (QR + GPS), scheduling, and payroll management.
 
-## Development Commands
+## Quick Start Commands
 
-### Git Workflow Commands (NEW: Simple GitHub Flow)
+### Development
+```bash
+# Install dependencies
+npm install:all          # Install all workspaces (frontend, backend, shared)
+
+# Start services
+npm run start:frontend    # Start React frontend (port 3000)
+npm run start:backend     # Start Express backend (port 3001)
+
+# Build
+npm run build:frontend    # Build production frontend
+npm run build:backend     # Build production backend
+```
+
+### Testing (CRITICAL - TDD is mandatory)
+```bash
+# Unit tests
+npm test                  # Jest unit tests
+npm run test:unit         # Unit tests only
+
+# Integration & E2E
+npm run test:e2e          # Playwright E2E tests
+npm run test:contract     # API contract testing
+npm run test:integration  # Integration tests
+
+# Performance
+npm run test:load         # K6 load testing (<3s, 10 users)
+
+# Validation
+npm run validate:deployment  # Post-deployment validation
+npm run validate:smoke       # Quick smoke tests
+npm run validate:performance # Performance validation
+```
+
+### Git Workflow (Simple GitHub Flow)
 ```bash
 # Quick deployment workflow for solo developers
-git-flow deploy          # Deploy current changes to main branch
+git-flow deploy          # Deploy current changes to main
 git-flow feature NAME    # Start new feature branch
-git-flow hotfix NAME     # Create and deploy hotfix quickly
+git-flow hotfix NAME     # Create and deploy hotfix
 git-flow rollback        # Rollback to previous version
-git-flow status          # Show current branch and deployment status
-git-flow --help          # Show help and examples
+git-flow status          # Show current status
 
 # Short aliases (after running setup-git-flow.sh)
 gfd                      # git-flow deploy
 gff NAME                 # git-flow feature
 gfh NAME                 # git-flow hotfix
-gfr                      # git-flow rollback
-gfs                      # git-flow status
-
-# Setup (one-time)
-./scripts/setup-git-flow.sh  # Configure Git aliases and workflow
 ```
 
-### Build & Test Commands
+### Deployment
 ```bash
-# Test commands (DOT Platform V0.1 - COMPLETED IMPLEMENTATION)
-npm test  # Jest unit tests (backend)
-npm run test:e2e  # Playwright E2E tests
-npm run test:load  # K6 load testing
-npm run test:contract  # API contract testing
-
-# Build and deployment
-npm run build  # Build production frontend
-./scripts/deploy.sh  # Docker Compose deployment with health checks
+# Docker Compose deployment
+./scripts/deploy.sh           # Deploy with health checks
 ./scripts/deploy.sh --status  # Check deployment status
-./scripts/deploy.sh --rollback  # Rollback to previous version
+./scripts/deploy.sh --rollback # Rollback to previous
 
-# Validation commands (NEW: 003-deployment-validation)
-npm run validate:deployment  # Post-deployment validation suite
-npm run validate:smoke  # Quick smoke tests
-npm run validate:performance  # Performance validation (< 3초, 10 users)
+# Vercel (automatic on main branch push)
+vercel --prod            # Manual Vercel deployment
 ```
 
-### Development Workflow
-1. **Specification First**: Create specifications in `.specify/` using templates
-2. **Test First (TDD)**: Write tests before implementation
-3. **Implementation**: Code to pass tests
-4. **Documentation**: Update relevant docs
+## Architecture Overview
 
-## Project Architecture
+### Technology Stack
+- **Frontend**: React 18, Material-UI, Redux Toolkit, React Router v6
+- **Backend**: Node.js 20+, Express 4, PostgreSQL, Redis, Socket.io
+- **Testing**: Jest (unit), Playwright (E2E), K6 (performance)
+- **Deployment**: Docker Compose (backend), Vercel (frontend)
+- **CI/CD**: GitHub Actions with automatic deployment
 
-### Directory Structure
-- `.specify/` - Specification system
-  - `templates/` - Templates for specs, plans, tasks, and agents
-  - `memory/` - Project constitution and governance docs
-  - `scripts/` - Automation scripts for spec workflow
-- `backend/` - Node.js/Express backend (COMPLETED)
-  - `src/` - API routes, models, services
-  - `tests/` - Jest unit and integration tests
-- `frontend/` - React frontend (COMPLETED)
-  - `src/` - Components, pages, services
-  - `tests/` - Playwright E2E tests
-- `scripts/` - Deployment and utility scripts
-- `docs/` - Implementation analysis and reports
-- `specs/` - Feature specifications
-  - `002-/` - DOT Platform V0.1 (COMPLETED)
-  - `003-/` - Deployment validation (CURRENT)
+### Project Structure
+```
+DOT-V0.1/
+├── frontend/         # React frontend application
+│   ├── src/
+│   │   ├── components/   # Reusable UI components
+│   │   ├── pages/       # Route-based page components
+│   │   ├── services/    # API integration
+│   │   └── store/       # Redux state management
+│   └── tests/          # E2E and integration tests
+│
+├── backend/          # Express API server
+│   ├── src/
+│   │   ├── lib/        # Feature libraries (TDD approach)
+│   │   │   ├── auth-lib/
+│   │   │   ├── attendance-lib/
+│   │   │   ├── payroll-lib/
+│   │   │   └── schedule-lib/
+│   │   ├── routes/     # API endpoints
+│   │   ├── middleware/ # Express middleware
+│   │   └── socket/     # Real-time WebSocket handlers
+│   └── tests/         # Unit and integration tests
+│
+├── shared/           # Shared utilities and types
+├── specs/           # Feature specifications (spec-driven)
+│   ├── 002-/       # DOT Platform V0.1 (COMPLETED)
+│   ├── 003-/       # Deployment validation (COMPLETED)
+│   └── 004-/       # Simple GitHub Flow (CURRENT)
+│
+└── .specify/        # Specification system templates
+    └── templates/   # Spec, plan, task templates
+```
 
-### Specification-Driven Development
-This project uses a formal specification system with the following templates:
-- **spec-template.md**: Feature specifications focusing on WHAT and WHY, not HOW
-- **plan-template.md**: Technical implementation planning
-- **tasks-template.md**: Breakdown of implementation tasks
-- **agent-file-template.md**: Agent/service specifications
+## Development Principles
 
-### Key Development Principles
-1. **Library-First**: Every feature starts as a standalone library
-2. **CLI Interface**: Libraries expose functionality via CLI with text I/O protocol
-3. **Test-First (NON-NEGOTIABLE)**: TDD is mandatory - tests written → approved → fail → implement
-4. **Integration Testing**: Required for library contracts, inter-service communication
-5. **Korean Comments Required**: All code comments must be in Korean (한글 주석 필수)
+### Mandatory Requirements
+1. **TDD (Test-Driven Development)**: NEVER implement without tests
+   - Write tests first → Tests fail → Implement → Tests pass
+   - All features must have unit, integration, and E2E tests
 
-### SuperClaude Framework Integration
-The project is configured with SuperClaude Framework through:
-- Global configuration: `~/.claude/CLAUDE.md`
-- Framework rules and principles in `.claude/` directory
-- MCP server integrations for enhanced capabilities
+2. **Specification-Driven**: Create specs before coding
+   - Use templates in `.specify/templates/`
+   - Specs focus on WHAT and WHY, not HOW
 
-## Current Status
+3. **Library-First Architecture**: Features as standalone libraries
+   - Each feature starts as a library in `backend/src/lib/`
+   - CLI interface with text I/O protocol
+   - Self-contained with own tests
 
-### DOT Platform V0.1 (COMPLETED - specs/002-/)
-- **Restaurant Management System**: Full implementation completed
-- **User Roles**: Owner, Worker, Seeker with role-based access control
-- **Core Features**: Authentication, attendance (QR + GPS), scheduling, payroll
-- **Quality Features**: i18n (한/영/일/중), accessibility (WCAG 2.1 AA), error tracking
-- **Testing**: Comprehensive E2E, integration, and unit tests
-- **Deployment**: Docker Compose with Nginx reverse proxy
+4. **Korean Comments**: 한글 주석 필수
+   - All code comments must be in Korean
+   - Documentation can be in English
 
-### Deployment Validation (COMPLETED - specs/003-/)
-- **Purpose**: Validate implemented features without code modification
-- **Requirements**: Docker health checks, performance validation (< 3초, 10 users)
-- **Approach**: Multi-layer validation (health, functional, performance, accessibility)
-- **Status**: Implementation complete with comprehensive validation suite
+### Performance Requirements
+- Page loading: < 3 seconds
+- Concurrent users: 10+ support
+- Database connections: Pooled (max 20)
+- Memory usage: < 512MB per container
 
-### Simple GitHub Flow (CURRENT - specs/004-simple-github-flow/)
-- **Purpose**: Streamlined Git workflow for solo developers with frequent deployments
-- **Core Commands**: deploy, feature, hotfix, rollback - all optimized for speed
-- **GitHub Actions**: Automatic deployment on main push, PR preview environments
-- **Key Features**:
-  - No branch protection for quick fixes (solo developer mode)
-  - Tests run but don't block deployment (continue-on-error: true)
-  - Automatic tagging for easy rollbacks
-  - Beginner-friendly with Korean/English support planned
-- **Integration**: Works with Vercel for automatic frontend deployment
-- **Status**: Core implementation complete, polish tasks remaining
+### Code Quality Standards
+```bash
+# Always run before committing
+npm run lint             # ESLint checking
+npm run typecheck        # TypeScript validation
+npm test                 # Run all tests
+```
+
+## Key Features
+
+### Core Functionality
+- **Authentication**: JWT-based with role switching
+- **Attendance**: QR code + GPS verification
+- **Scheduling**: Drag-and-drop calendar with templates
+- **Payroll**: Automatic calculation with tax/benefits
+- **Real-time**: Socket.io for live updates
+- **i18n**: Korean, English, Japanese, Chinese support
+- **Accessibility**: WCAG 2.1 AA compliant
+
+### User Roles
+- **Owner**: Full access, restaurant management
+- **Worker**: Check-in/out, view schedules, payslips
+- **Seeker**: Job search, application submission
+
+## Database Schema
+
+### Key Tables
+- `users`: User accounts with role-based access
+- `attendance_records`: Check-in/out with GPS/QR validation
+- `schedules`: Work schedules with templates
+- `payroll_records`: Calculated payroll with deductions
+- `restaurants`: Multi-tenant restaurant data
+
+### Migrations
+```bash
+npm run db:migrate       # Run database migrations
+npm run db:seed          # Seed test data
+```
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - New user registration
+- `POST /api/auth/refresh` - Refresh JWT token
+
+### Attendance
+- `POST /api/attendance/checkin` - Clock in (QR/GPS)
+- `POST /api/attendance/checkout` - Clock out
+- `GET /api/attendance/status` - Current status
+
+### Schedule
+- `GET /api/schedules` - List schedules
+- `POST /api/schedules` - Create schedule
+- `PUT /api/schedules/:id` - Update schedule
+
+## Environment Variables
+
+### Required Configuration
+```env
+# Database
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=dot_platform
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# JWT
+JWT_SECRET=your_secret_key
+JWT_REFRESH_SECRET=your_refresh_key
+
+# Frontend URLs
+REACT_APP_API_URL=http://localhost:3001
+REACT_APP_SOCKET_URL=ws://localhost:3001
+```
+
+## Deployment
+
+### Vercel (Frontend)
+- Automatic deployment on push to `main`
+- Preview deployments for feature branches
+- Environment variables set in Vercel dashboard
+
+### Docker Compose (Full Stack)
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### GitHub Actions
+- Runs on every push to `main`
+- Tests run but don't block deployment (solo developer mode)
+- Automatic tagging for rollback capability
+
+## Testing Strategy
+
+### Test Hierarchy
+1. **Unit Tests**: Individual functions/components
+2. **Integration Tests**: API endpoints, database operations
+3. **E2E Tests**: Full user workflows with Playwright
+4. **Performance Tests**: K6 load testing for requirements
+5. **Validation Tests**: Post-deployment health checks
+
+### Writing Tests
+- Place tests next to source files (`.test.js`)
+- Use descriptive test names in Korean comments
+- Mock external dependencies appropriately
+- Ensure tests are deterministic and isolated
+
+## Current Development Status
+
+### Completed Features (specs/002-003/)
+- Full restaurant management system
+- Multi-role authentication and authorization
+- QR/GPS attendance tracking
+- Scheduling with templates
+- Payroll calculation
+- i18n and accessibility
+- Docker deployment with validation
+
+### Active Development (specs/004-simple-github-flow/)
+- Simplified Git workflow for solo developers
+- One-command deployment process
+- Automatic Vercel integration
+- Quick rollback capability
 
 ## Important Notes
 
-- **TDD Mandatory**: Never implement without tests
-- **Spec-First**: Always create specifications before coding
-- **Korean Documentation**: Use Korean for inline code comments
-- **No Code Modification**: Current feature (003-) prohibits file changes, validation only
-- **Performance Requirements**: Page loading < 3초, support 10명 동시 사용자
+- **No Code Without Tests**: TDD is non-negotiable
+- **Spec-First Development**: Always create specifications
+- **Performance Critical**: Must meet <3s load, 10 user requirements
+- **Korean Priority**: Comments and user-facing text in Korean
+- **Clean Git History**: Use meaningful commit messages
+- **No Direct Main Commits**: Always use feature branches

@@ -6,7 +6,8 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../../db');
-const { authenticate, authorize } = require('../../middleware/auth');
+const { authenticate } = require('../../middleware/auth');
+const { authorize } = require('../../middleware/authorize');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
 const moment = require('moment-timezone');

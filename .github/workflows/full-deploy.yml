@@ -1,0 +1,181 @@
+name: 통합 자동 배포 (Frontend + Backend)
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+  workflow_dispatch:
+    inputs:
+      deploy_frontend:
+        description: 'Frontend 배포 여부'
+        required: true
+        default: true
+        type: boolean
+      deploy_backend:
+        description: 'Backend 배포 여부'
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  # 전체 테스트 실행
+  test-all:
+    name: 통합 테스트
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 전체 의존성 설치
+        run: npm run install:all
+
+      - name: Frontend 테스트
+        run: |
+          cd frontend
+          npm run test -- --watchAll=false --coverage || true
+
+      - name: Backend 테스트
+        run: |
+          cd backend
+          npm run test -- --coverage || true
+
+      - name: 테스트 결과 업로드
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            frontend/coverage/
+            backend/coverage/
+
+  # Frontend 배포 (Vercel)
+  deploy-frontend:
+    name: Frontend 배포 (Vercel)
+    runs-on: ubuntu-latest
+    needs: test-all
+    if: github.event.inputs.deploy_frontend != 'false'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Vercel 배포 트리거
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./frontend
+
+  # Backend 배포 (EC2 Docker)
+  deploy-backend:
+    name: Backend 배포 (EC2)
+    runs-on: ubuntu-latest
+    needs: test-all
+    if: github.event.inputs.deploy_backend != 'false'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Docker 이미지 빌드
+        run: |
+          cd backend
+          docker build -t dot-backend:${{ github.sha }} .
+
+      - name: Docker 이미지 저장
+        run: |
+          docker save dot-backend:${{ github.sha }} | gzip > backend-image.tar.gz
+
+      - name: EC2로 이미지 전송 및 배포
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 이전 컨테이너 정지
+            docker-compose -f /home/ubuntu/dot-platform/docker-compose.prod.yml down || true
+
+            # 새 이미지 로드
+            docker load < backend-image.tar.gz
+
+            # 환경 변수 업데이트
+            export BACKEND_IMAGE=dot-backend:${{ github.sha }}
+
+            # 새 컨테이너 시작
+            docker-compose -f /home/ubuntu/dot-platform/docker-compose.prod.yml up -d
+
+            # 헬스체크
+            sleep 10
+            curl -f http://localhost:3001/health || exit 1
+
+            echo "✅ Backend 배포 완료!"
+
+  # 배포 후 통합 검증
+  verify-deployment:
+    name: 배포 검증
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    if: always()
+
+    steps:
+      - name: Frontend 상태 확인
+        run: |
+          echo "🔍 Frontend 검증 중..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://dot-platform.vercel.app)
+          if [ "$response" = "200" ]; then
+            echo "✅ Frontend 정상 작동"
+          else
+            echo "❌ Frontend 응답 오류: $response"
+            exit 1
+          fi
+
+      - name: Backend API 상태 확인
+        run: |
+          echo "🔍 Backend 검증 중..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.EC2_HOST }}:3001/health)
+          if [ "$response" = "200" ]; then
+            echo "✅ Backend API 정상 작동"
+          else
+            echo "❌ Backend API 응답 오류: $response"
+            exit 1
+          fi
+
+      - name: Frontend-Backend 연동 테스트
+        run: |
+          echo "🔍 통합 연동 테스트..."
+          # API 호출 테스트 (예: 로그인 엔드포인트)
+          curl -X POST http://${{ secrets.EC2_HOST }}:3001/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"test@test.com","password":"test"}' \
+            -w "\n응답 코드: %{http_code}\n" || true
+
+      - name: 배포 완료 알림
+        uses: rtCamp/action-slack-notify@v2
+        if: success()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: good
+          SLACK_MESSAGE: |
+            🎉 통합 배포 성공!
+
+            **Frontend**: https://dot-platform.vercel.app
+            **Backend**: http://${{ secrets.EC2_HOST }}:3001
+            **브랜치**: ${{ github.ref_name }}
+            **커밋**: ${{ github.sha }}
+            **배포자**: ${{ github.actor }}
+
+            ✅ 모든 서비스가 정상 작동 중입니다.

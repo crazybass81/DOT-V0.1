@@ -1,24 +1,27 @@
 {
-  "name": "dot-platform",
   "version": 2,
-  "framework": "create-react-app",
-  "builds": [
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "frontend/build"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/$1"
-    }
-  ],
-  "buildCommand": "cd frontend && npm install && npm run build",
+  "buildCommand": "cd frontend && npm install --legacy-peer-deps && GENERATE_SOURCEMAP=false npm run build",
   "outputDirectory": "frontend/build",
-  "installCommand": "npm install",
-  "devCommand": "cd frontend && npm start"
+  "framework": "create-react-app",
+  "env": {
+    "NODE_ENV": "production",
+    "REACT_APP_API_URL": "http://100.25.70.173:3001",
+    "REACT_APP_SOCKET_URL": "ws://100.25.70.173:3001",
+    "DISABLE_NEW_JSX_TRANSFORM": "true"
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ],
+  "regions": ["icn1"],
+  "public": true,
+  "build": {
+    "env": {
+      "SKIP_PREFLIGHT_CHECK": "true",
+      "GENERATE_SOURCEMAP": "false",
+      "INLINE_RUNTIME_CHUNK": "false"
+    }
+  }
 }
