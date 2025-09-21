@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm install --legacy-peer-deps && GENERATE_SOURCEMAP=false npm run build",
+  "buildCommand": "cd frontend && npm install --legacy-peer-deps --force && GENERATE_SOURCEMAP=false npm run build",
   "outputDirectory": "frontend/build",
   "framework": "create-react-app",
   "env": {
