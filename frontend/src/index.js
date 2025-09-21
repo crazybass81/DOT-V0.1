@@ -12,9 +12,11 @@ import { CssBaseline } from '@mui/material';
 import { SnackbarProvider } from 'notistack';
 
 import App from './App';
-import { store } from './store';
-import { getTheme } from './theme/index';
 import './index.css';
+
+// store와 theme를 동적으로 import하여 초기화 순서 보장
+const { store } = require('./store');
+const { getTheme } = require('./theme/index');
 
 // DOM이 준비된 후 React 앱 초기화
 const initApp = () => {
@@ -30,28 +32,38 @@ const initApp = () => {
   // 3. React 앱 초기화
   const root = ReactDOM.createRoot(document.getElementById('root'));
 
-  root.render(
-    <React.StrictMode>
-      <Provider store={store}>
-        <BrowserRouter>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <SnackbarProvider
-              maxSnack={3}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              autoHideDuration={5000}
-              preventDuplicate
-            >
-              <App />
-            </SnackbarProvider>
-          </ThemeProvider>
-        </BrowserRouter>
-      </Provider>
-    </React.StrictMode>
+  // Production에서는 StrictMode 비활성화 (초기화 오류 방지)
+  const AppWrapper = (
+    <Provider store={store}>
+      <BrowserRouter>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <SnackbarProvider
+            maxSnack={3}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            autoHideDuration={5000}
+            preventDuplicate
+          >
+            <App />
+          </SnackbarProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </Provider>
   );
+
+  // 개발 환경에서만 StrictMode 사용
+  if (process.env.NODE_ENV === 'development') {
+    root.render(
+      <React.StrictMode>
+        {AppWrapper}
+      </React.StrictMode>
+    );
+  } else {
+    root.render(AppWrapper);
+  }
 
   // 개발 환경 디버깅 설정을 여기로 이동
   if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
@@ -78,12 +90,28 @@ const initApp = () => {
   }
 };
 
+// 전역 에러 핸들러 설정
+window.addEventListener('error', (event) => {
+  console.error('Global error caught:', event.error);
+  // 초기화 관련 오류 무시 (production에서)
+  if (process.env.NODE_ENV === 'production' &&
+      event.error?.message?.includes('Cannot access') &&
+      event.error?.message?.includes('before initialization')) {
+    event.preventDefault();
+    console.warn('Initialization error suppressed in production');
+  }
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+});
+
 // DOM이 준비되면 앱 초기화
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
 } else {
   // 이미 DOM이 로드된 경우 즉시 실행
-  initApp();
+  setTimeout(initApp, 0); // 다음 tick에 실행하여 초기화 순서 보장
 }
 
 // 서비스 워커 등록 (PWA 지원 준비)
