@@ -31,6 +31,8 @@ async function startServer() {
       console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다`);
       console.log(`📍 환경: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 헬스체크: http://localhost:${PORT}/health`);
+      console.log(`🔄 버전: v1.0.17 - EC2 Auto Deploy 🐳`);
+      console.log(`📅 시작 시간: ${new Date().toLocaleString('ko-KR')}`);
     });
 
     // Graceful shutdown 처리
