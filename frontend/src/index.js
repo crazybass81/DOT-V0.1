@@ -11,12 +11,13 @@ import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import { SnackbarProvider } from 'notistack';
 
-import App from './App';
-import './index.css';
+// i18n을 가장 먼저 import하여 초기화
+import './i18n';
 
-// store와 theme를 동적으로 import하여 초기화 순서 보장
-const { store } = require('./store');
-const { getTheme } = require('./theme/index');
+import App from './App';
+import { store } from './store';
+import { getTheme } from './theme/index';
+import './index.css';
 
 // DOM이 준비된 후 React 앱 초기화
 const initApp = () => {
@@ -111,7 +112,7 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
 } else {
   // 이미 DOM이 로드된 경우 즉시 실행
-  setTimeout(initApp, 0); // 다음 tick에 실행하여 초기화 순서 보장
+  initApp();
 }
 
 // 서비스 워커 등록 (PWA 지원 준비)
