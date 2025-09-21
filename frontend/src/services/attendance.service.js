@@ -3,53 +3,38 @@
  * 출퇴근, 휴게시간 관리 API와 통신하는 서비스 모듈
  */
 
-import api, { API_ENDPOINTS } from './api';
+import api, { API_ENDPOINTS } from './api-client';
 
 // 근태 서비스
 const attendanceService = {
   /**
-   * GPS 기반 출근 체크
-   * @param {Object} data - 출근 정보
-   * @param {number} data.latitude - 위도
-   * @param {number} data.longitude - 경도
-   * @param {number} data.accuracy - GPS 정확도
+   * 출근하기
+   * @param {Object} checkInData - 출근 정보
+   * @param {number} checkInData.latitude - 위도
+   * @param {number} checkInData.longitude - 경도
+   * @param {string} checkInData.qrCodeToken - QR 코드 토큰 (선택)
    * @returns {Promise} 출근 응답
    */
-  checkInWithGPS: async (data) => {
-    const response = await api.post(API_ENDPOINTS.ATTENDANCE.CHECK_IN, {
-      type: 'gps',
-      ...data
-    });
+  checkIn: async (checkInData) => {
+    const response = await api.post(API_ENDPOINTS.ATTENDANCE.CHECK_IN, checkInData);
     return response.data;
   },
 
   /**
-   * QR 코드 기반 출근 체크
-   * @param {Object} data - QR 정보
-   * @param {string} data.qrData - QR 코드 데이터
-   * @returns {Promise} 출근 응답
-   */
-  checkInWithQR: async (data) => {
-    const response = await api.post(API_ENDPOINTS.ATTENDANCE.CHECK_IN, {
-      type: 'qr',
-      ...data
-    });
-    return response.data;
-  },
-
-  /**
-   * 퇴근 체크
-   * @param {Object} data - 퇴근 정보
+   * 퇴근하기
+   * @param {Object} checkOutData - 퇴근 정보
+   * @param {number} checkOutData.latitude - 위도
+   * @param {number} checkOutData.longitude - 경도
    * @returns {Promise} 퇴근 응답
    */
-  checkOut: async (data = {}) => {
-    const response = await api.post(API_ENDPOINTS.ATTENDANCE.CHECK_OUT, data);
+  checkOut: async (checkOutData) => {
+    const response = await api.post(API_ENDPOINTS.ATTENDANCE.CHECK_OUT, checkOutData);
     return response.data;
   },
 
   /**
-   * 휴게 시작
-   * @returns {Promise} 휴게 시작 응답
+   * 휴게시간 시작
+   * @returns {Promise} 휴게시간 시작 응답
    */
   startBreak: async () => {
     const response = await api.post(API_ENDPOINTS.ATTENDANCE.BREAK_START);
@@ -57,8 +42,8 @@ const attendanceService = {
   },
 
   /**
-   * 휴게 종료
-   * @returns {Promise} 휴게 종료 응답
+   * 휴게시간 종료
+   * @returns {Promise} 휴게시간 종료 응답
    */
   endBreak: async () => {
     const response = await api.post(API_ENDPOINTS.ATTENDANCE.BREAK_END);
@@ -66,8 +51,8 @@ const attendanceService = {
   },
 
   /**
-   * 오늘의 근태 기록 조회
-   * @returns {Promise} 오늘의 근태 기록
+   * 오늘 근태 정보 조회
+   * @returns {Promise} 오늘 근태 정보
    */
   getTodayAttendance: async () => {
     const response = await api.get(API_ENDPOINTS.ATTENDANCE.TODAY);
@@ -75,138 +60,77 @@ const attendanceService = {
   },
 
   /**
-   * 근태 기록 이력 조회
+   * 근태 이력 조회
    * @param {Object} params - 조회 조건
-   * @param {string} params.startDate - 시작일
-   * @param {string} params.endDate - 종료일
+   * @param {string} params.startDate - 시작일 (YYYY-MM-DD)
+   * @param {string} params.endDate - 종료일 (YYYY-MM-DD)
    * @param {number} params.page - 페이지 번호
-   * @param {number} params.limit - 페이지당 항목 수
-   * @returns {Promise} 근태 기록 목록
+   * @param {number} params.limit - 페이지 크기
+   * @returns {Promise} 근태 이력
    */
-  getHistory: async (params = {}) => {
+  getAttendanceHistory: async (params = {}) => {
     const response = await api.get(API_ENDPOINTS.ATTENDANCE.HISTORY, params);
     return response.data;
   },
 
   /**
-   * 근태 보고서 생성
-   * @param {Object} params - 보고서 생성 조건
-   * @param {string} params.month - 대상 월 (YYYY-MM)
-   * @param {string} params.format - 보고서 형식 (pdf, excel)
-   * @returns {Promise} 보고서 데이터
+   * 근태 리포트 조회
+   * @param {Object} params - 리포트 조건
+   * @param {string} params.month - 월 (YYYY-MM)
+   * @param {string} params.userId - 사용자 ID (관리자용)
+   * @returns {Promise} 근태 리포트
    */
-  generateReport: async (params) => {
-    const response = await api.post(API_ENDPOINTS.ATTENDANCE.REPORT, params);
+  getAttendanceReport: async (params = {}) => {
+    const response = await api.get(API_ENDPOINTS.ATTENDANCE.REPORT, params);
     return response.data;
   },
 
   /**
-   * 근태 통계 조회
-   * @param {Object} params - 통계 조회 조건
-   * @param {string} params.period - 기간 (week, month, year)
-   * @param {string} params.businessId - 사업장 ID
-   * @returns {Promise} 근태 통계 데이터
+   * 현재 근태 상태 조회
+   * @returns {Promise} 현재 근태 상태
    */
-  getStatistics: async (params) => {
-    const response = await api.get('/attendance/statistics', params);
+  getCurrentStatus: async () => {
+    const response = await api.get(API_ENDPOINTS.ATTENDANCE.TODAY);
     return response.data;
   },
 
   /**
-   * 근무 시간 계산
-   * @param {Date} checkIn - 출근 시간
-   * @param {Date} checkOut - 퇴근 시간
-   * @param {Array} breaks - 휴게 시간 목록
-   * @returns {Object} 계산된 근무 시간
+   * 근태 정정 요청
+   * @param {Object} correctionData - 정정 요청 정보
+   * @param {string} correctionData.date - 정정할 날짜
+   * @param {string} correctionData.type - 정정 타입 (checkin/checkout/break)
+   * @param {string} correctionData.time - 정정할 시간
+   * @param {string} correctionData.reason - 정정 사유
+   * @returns {Promise} 정정 요청 응답
    */
-  calculateWorkTime: (checkIn, checkOut, breaks = []) => {
-    if (!checkIn || !checkOut) {
-      return {
-        totalMinutes: 0,
-        workMinutes: 0,
-        breakMinutes: 0,
-        overtimeMinutes: 0,
-        formatted: '00:00'
-      };
-    }
-
-    const checkInTime = new Date(checkIn);
-    const checkOutTime = new Date(checkOut);
-    const totalMinutes = Math.floor((checkOutTime - checkInTime) / 1000 / 60);
-
-    // 휴게 시간 계산
-    const breakMinutes = breaks.reduce((total, breakRecord) => {
-      if (breakRecord.startTime && breakRecord.endTime) {
-        const start = new Date(breakRecord.startTime);
-        const end = new Date(breakRecord.endTime);
-        return total + Math.floor((end - start) / 1000 / 60);
-      }
-      return total;
-    }, 0);
-
-    const workMinutes = totalMinutes - breakMinutes;
-
-    // 초과 근무 계산 (8시간 = 480분 초과)
-    const regularWorkMinutes = 480;
-    const overtimeMinutes = Math.max(0, workMinutes - regularWorkMinutes);
-
-    // 포맷팅
-    const hours = Math.floor(workMinutes / 60);
-    const minutes = workMinutes % 60;
-    const formatted = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-
-    return {
-      totalMinutes,
-      workMinutes,
-      breakMinutes,
-      overtimeMinutes,
-      formatted
-    };
+  requestCorrection: async (correctionData) => {
+    const response = await api.post('/attendance/correction', correctionData);
+    return response.data;
   },
 
   /**
-   * 지각 여부 확인
-   * @param {Date} checkInTime - 출근 시간
-   * @param {Date} scheduledTime - 예정 출근 시간
-   * @returns {Object} 지각 정보
+   * QR 코드 생성 (관리자용)
+   * @param {Object} qrData - QR 코드 생성 정보
+   * @param {string} qrData.businessId - 사업장 ID
+   * @param {number} qrData.validMinutes - 유효 시간 (분)
+   * @returns {Promise} QR 코드 응답
    */
-  checkLateStatus: (checkInTime, scheduledTime) => {
-    if (!checkInTime || !scheduledTime) {
-      return {
-        isLate: false,
-        lateMinutes: 0
-      };
-    }
-
-    const actualTime = new Date(checkInTime);
-    const expectedTime = new Date(scheduledTime);
-    const diffMinutes = Math.floor((actualTime - expectedTime) / 1000 / 60);
-
-    return {
-      isLate: diffMinutes > 0,
-      lateMinutes: Math.max(0, diffMinutes)
-    };
+  generateQRCode: async (qrData) => {
+    const response = await api.post('/attendance/qr-code/generate', qrData);
+    return response.data;
   },
 
   /**
-   * 근태 상태 문자열 변환
-   * @param {string} status - 근태 상태 코드
-   * @returns {string} 한글 근태 상태
+   * 위치 기반 출퇴근 검증
+   * @param {Object} locationData - 위치 정보
+   * @param {number} locationData.latitude - 위도
+   * @param {number} locationData.longitude - 경도
+   * @returns {Promise} 위치 검증 응답
    */
-  getStatusText: (status) => {
-    const statusMap = {
-      'checked-in': '출근',
-      'on-break': '휴게',
-      'checked-out': '퇴근',
-      'off-duty': '근무 외',
-      'absent': '결근',
-      'late': '지각',
-      'early-leave': '조퇴',
-      'overtime': '초과근무'
-    };
-
-    return statusMap[status] || status;
-  }
+  validateLocation: async (locationData) => {
+    const response = await api.post('/attendance/validate-location', locationData);
+    return response.data;
+  },
 };
 
 export default attendanceService;

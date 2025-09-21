@@ -1,6 +1,7 @@
 /**
  * DOT Platform Frontend - Redux Store 설정
  * 전역 상태 관리를 위한 Redux Toolkit 스토어 구성
+ * 순환 종속성 해결을 위해 store 초기화 후 API 클라이언트에 참조 전달
  */
 
 import { configureStore } from '@reduxjs/toolkit';
@@ -13,6 +14,9 @@ import scheduleReducer from './slices/scheduleSlice';
 import notificationReducer from './slices/notificationSlice';
 import businessReducer from './slices/businessSlice';
 import uiReducer from './slices/uiSlice';
+
+// 순환 종속성 해결을 위한 동적 import
+let setStoreReference = null;
 
 // 루트 리듀서 결합
 const rootReducer = combineReducers({
@@ -44,6 +48,21 @@ export const store = configureStore({
   // preloadedState는 SSR이나 초기 상태가 필요한 경우 사용
   preloadedState: undefined,
 });
+
+// Store 초기화 완료 후 API 클라이언트에 참조 전달
+async function initializeStoreReference() {
+  try {
+    const { setStoreReference: setApiStoreRef } = await import('../services/api-client');
+    setApiStoreRef(store);
+    console.log('Store reference set to API client successfully');
+  } catch (error) {
+    console.warn('Failed to set store reference to API client:', error);
+  }
+}
+
+// Store가 완전히 초기화된 후 API 클라이언트에 참조 전달
+// 이렇게 하면 순환 종속성을 피할 수 있습니다
+initializeStoreReference();
 
 // 개발용 디버깅 함수 - window 의존성 제거
 if (process.env.NODE_ENV === 'development') {
