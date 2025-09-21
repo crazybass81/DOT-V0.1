@@ -93,10 +93,10 @@ jobs:
           export ENVIRONMENT="${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
 
           # 프로젝트 디렉토리로 이동
-          cd /home/ubuntu/dot-platform || {
+          cd /home/${{ secrets.EC2_USER }}/dot-platform || {
             echo "프로젝트 디렉토리가 없습니다. 초기 설정을 진행합니다..."
-            git clone https://github.com/${{ github.repository }}.git /home/ubuntu/dot-platform
-            cd /home/ubuntu/dot-platform
+            git clone https://github.com/${{ github.repository }}.git /home/${{ secrets.EC2_USER }}/dot-platform
+            cd /home/${{ secrets.EC2_USER }}/dot-platform
           }
 
           # 최신 코드 가져오기
@@ -228,7 +228,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no \
               ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/ubuntu/dot-platform
+            cd /home/${{ secrets.EC2_USER }}/dot-platform
 
             # 이전 태그로 롤백
             prev_tag=$(docker images --format "{{.Tag}}" | grep -v latest | head -n 2 | tail -n 1)
