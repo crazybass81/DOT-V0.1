@@ -25,6 +25,7 @@ const LoginPage = () => {
         justifyContent: 'center',
         backgroundColor: '#fafafa',
         padding: 2,
+        position: 'relative',
       }}
     >
       <Paper
@@ -86,6 +87,24 @@ const LoginPage = () => {
           임시 로그인 페이지입니다. 실제 인증 기능은 추후 구현될 예정입니다.
         </Alert>
       </Paper>
+
+      {/* 배포 버전 정보 - 2024.09.20 자동 배포 테스트 */}
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: 20,
+          right: 20,
+          color: 'text.secondary',
+          fontSize: '0.75rem',
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          padding: '4px 8px',
+          borderRadius: 1,
+        }}
+      >
+        v1.0.16 - Vercel Auto Deploy ✨
+        <br />
+        {new Date().toLocaleString('ko-KR')}
+      </Box>
     </Box>
   );
 };
