@@ -1,0 +1,242 @@
+name: Unified Deployment Pipeline
+# DOT-V0.1 통합 배포 파이프라인 - Solo Developer 최적화
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'claudedocs/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: '테스트 건너뛰기'
+        required: false
+        default: false
+        type: boolean
+      environment:
+        description: '배포 환경'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  NODE_VERSION: '20'
+  PROJECT_NAME: 'dot-platform'
+
+jobs:
+  # Phase 1: 프론트엔드 Vercel 배포
+  deploy-frontend:
+    name: Frontend 배포 (Vercel)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    outputs:
+      deployment-url: ${{ steps.vercel-deploy.outputs.deployment-url }}
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Vercel CLI 설치
+        run: npm install --global vercel@latest
+
+      - name: Vercel 프로덕션 배포
+        id: vercel-deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "🚀 Vercel 프로덕션 배포 시작..."
+
+          # 프로젝트 루트에서 실행 (vercel.json이 있는 위치)
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel build --prod --token=$VERCEL_TOKEN
+
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN)
+          echo "deployment-url=${DEPLOYMENT_URL}" >> $GITHUB_OUTPUT
+
+          echo "✅ Frontend 배포 완료: ${DEPLOYMENT_URL}"
+
+  # Phase 2: 백엔드 EC2 배포
+  deploy-backend:
+    name: Backend 배포 (EC2 Docker)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: EC2 서버에 SSH 연결 및 배포
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🚀 Backend 배포 시작..."
+
+            # 프로젝트 디렉토리로 이동
+            cd /home/${{ secrets.EC2_USER }}/DOT-V0.1 || exit 1
+
+            # 최신 코드 가져오기
+            git fetch origin
+            git checkout main
+            git pull origin main
+
+            # Docker Compose로 백엔드 재시작
+            echo "🔄 Docker 컨테이너 업데이트..."
+            docker-compose -f docker-compose.prod.yml down
+            docker-compose -f docker-compose.prod.yml up -d --build
+
+            # 헬스체크
+            echo "⏳ 서비스 시작 대기..."
+            sleep 10
+
+            if curl -f http://localhost:3001/health > /dev/null 2>&1; then
+              echo "✅ Backend 서비스 정상 시작!"
+            else
+              echo "❌ Backend 헬스체크 실패"
+              docker-compose -f docker-compose.prod.yml logs --tail=50
+              exit 1
+            fi
+
+  # Phase 3: PR 프리뷰 배포
+  deploy-preview:
+    name: PR 프리뷰 배포
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Vercel CLI 설치
+        run: npm install --global vercel@latest
+
+      - name: Vercel 프리뷰 배포
+        id: vercel-preview
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "🔍 PR 프리뷰 배포 시작..."
+
+          # 프로젝트 루트에서 실행
+          vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+          vercel build --token=$VERCEL_TOKEN
+
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN)
+          echo "deployment-url=${DEPLOYMENT_URL}" >> $GITHUB_OUTPUT
+
+          echo "✅ 프리뷰 배포 완료: ${DEPLOYMENT_URL}"
+
+      - name: PR에 배포 URL 코멘트
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const deploymentUrl = '${{ steps.vercel-preview.outputs.deployment-url }}';
+            const prNumber = context.issue.number;
+
+            const comment = `
+            ## 🚀 프리뷰 배포 완료!
+
+            **프리뷰 URL**: ${deploymentUrl}
+
+            ### 테스트 체크리스트:
+            - [ ] UI/UX 변경 사항 확인
+            - [ ] 기능 동작 테스트
+            - [ ] 모바일 반응형 확인
+            - [ ] 콘솔 오류 없음 확인
+
+            ---
+            *새 커밋 푸시 시 자동으로 업데이트됩니다.*
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Phase 4: 배포 후 검증
+  post-deploy-validation:
+    name: 배포 검증
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    if: github.ref == 'refs/heads/main' && always()
+
+    steps:
+      - name: Frontend 헬스체크
+        if: needs.deploy-frontend.result == 'success'
+        run: |
+          echo "🔍 Frontend 검증..."
+          frontend_url="${{ needs.deploy-frontend.outputs.deployment-url }}"
+
+          response=$(curl -s -o /dev/null -w "%{http_code}" "${frontend_url}")
+          if [ "$response" = "200" ]; then
+            echo "✅ Frontend 정상 (HTTP $response)"
+          else
+            echo "⚠️ Frontend 응답 이상: HTTP $response"
+          fi
+
+          # 성능 검증 (<3초)
+          response_time=$(curl -o /dev/null -s -w '%{time_total}' "${frontend_url}")
+          echo "📊 페이지 로딩 시간: ${response_time}초"
+
+          if (( $(echo "$response_time < 3.0" | bc -l) )); then
+            echo "✅ 성능 요구사항 만족 (<3초)"
+          else
+            echo "⚠️ 성능 개선 필요: ${response_time}초 (목표: <3초)"
+          fi
+
+      - name: Backend 헬스체크
+        if: needs.deploy-backend.result == 'success'
+        run: |
+          echo "🔍 Backend 검증..."
+          backend_url="http://${{ secrets.EC2_HOST }}:3001"
+
+          response=$(curl -s -o /dev/null -w "%{http_code}" "${backend_url}/health")
+          if [ "$response" = "200" ]; then
+            echo "✅ Backend API 정상 (HTTP $response)"
+
+            # 상세 정보 가져오기
+            health_data=$(curl -s "${backend_url}/health")
+            echo "📊 Backend 상태: ${health_data}"
+          else
+            echo "⚠️ Backend API 응답 이상: HTTP $response"
+          fi
+
+      - name: 배포 완료 알림
+        if: success()
+        run: |
+          echo "========================================="
+          echo "🎉 DOT Platform 배포 완료!"
+          echo "========================================="
+          echo "Frontend: ${{ needs.deploy-frontend.outputs.deployment-url }}"
+          echo "Backend: http://${{ secrets.EC2_HOST }}:3001"
+          echo "========================================="

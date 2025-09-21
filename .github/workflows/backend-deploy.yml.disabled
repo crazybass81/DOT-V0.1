@@ -1,0 +1,244 @@
+name: Backend 자동 배포 (EC2 Docker)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backend/**'
+      - 'docker-compose.yml'
+      - 'docker-compose.prod.yml'
+      - 'Dockerfile*'
+      - '.github/workflows/backend-deploy.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-backend
+
+jobs:
+  build-and-push:
+    name: Docker 이미지 빌드 및 푸시
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Docker Buildx 설정
+        uses: docker/setup-buildx-action@v3
+
+      - name: GitHub Container Registry 로그인
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 메타데이터 추출
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Backend Docker 이미지 빌드 및 푸시
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+
+  deploy-to-ec2:
+    name: EC2 배포
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: EC2 배포 스크립트 작성
+        run: |
+          cat > deploy-script.sh << 'EOF'
+          #!/bin/bash
+          set -e
+
+          echo "🚀 DOT Platform Backend 배포 시작..."
+
+          # 환경 변수 설정
+          export DOCKER_IMAGE="${{ needs.build-and-push.outputs.image-tag }}"
+          export ENVIRONMENT="${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
+
+          # 프로젝트 디렉토리로 이동
+          cd /home/${{ secrets.EC2_USER }}/dot-platform || {
+            echo "프로젝트 디렉토리가 없습니다. 초기 설정을 진행합니다..."
+            git clone https://github.com/${{ github.repository }}.git /home/${{ secrets.EC2_USER }}/dot-platform
+            cd /home/${{ secrets.EC2_USER }}/dot-platform
+          }
+
+          # 최신 코드 가져오기
+          git fetch origin
+          git checkout ${{ github.ref_name }}
+          git pull origin ${{ github.ref_name }}
+
+          # 환경 파일 확인
+          if [ ! -f .env ]; then
+            echo "⚠️ .env 파일이 없습니다. 환경 변수를 설정해주세요."
+            exit 1
+          fi
+
+          # Docker 로그인
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+          # 이전 컨테이너 정리
+          echo "🧹 이전 컨테이너 정리..."
+          docker-compose -f docker-compose.prod.yml down || true
+
+          # 새 이미지 가져오기
+          echo "📦 새 Docker 이미지 가져오기..."
+          docker pull $DOCKER_IMAGE
+
+          # 컨테이너 시작
+          echo "🔄 새 컨테이너 시작..."
+          docker-compose -f docker-compose.prod.yml up -d
+
+          # 헬스체크 대기
+          echo "⏳ 서비스 시작 대기 중..."
+          sleep 10
+
+          # 헬스체크
+          for i in {1..30}; do
+            if curl -f http://localhost:3001/health > /dev/null 2>&1; then
+              echo "✅ Backend 서비스가 정상적으로 시작되었습니다!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ 헬스체크 실패. 로그를 확인하세요."
+              docker-compose -f docker-compose.prod.yml logs --tail=50
+              exit 1
+            fi
+            echo "헬스체크 시도 $i/30..."
+            sleep 2
+          done
+
+          # 불필요한 이미지 정리
+          echo "🧹 불필요한 Docker 이미지 정리..."
+          docker image prune -af --filter "until=24h"
+
+          echo "✨ 배포 완료!"
+          EOF
+
+      - name: SSH 키 설정
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: EC2 서버에 배포
+        run: |
+          # SSH 연결 및 배포 스크립트 실행
+          ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+              'bash -s' < deploy-script.sh
+
+      - name: 배포 검증
+        run: |
+          echo "🔍 배포 검증 시작..."
+
+          # API 헬스체크
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.EC2_HOST }}:3001/health)
+          if [ "$response" = "200" ]; then
+            echo "✅ Backend API 정상 작동 중"
+          else
+            echo "❌ Backend API 응답 오류: $response"
+            exit 1
+          fi
+
+          # 버전 확인
+          version=$(curl -s http://${{ secrets.EC2_HOST }}:3001/version || echo "unknown")
+          echo "📌 배포된 버전: $version"
+
+      - name: 배포 성공 알림
+        uses: rtCamp/action-slack-notify@v2
+        if: success() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: good
+          SLACK_MESSAGE: |
+            🎉 Backend EC2 배포 성공!
+
+            **환경**: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}
+            **브랜치**: ${{ github.ref_name }}
+            **커밋**: ${{ github.sha }}
+            **배포자**: ${{ github.actor }}
+            **Docker 이미지**: ${{ needs.build-and-push.outputs.image-tag }}
+            **서버**: ${{ secrets.EC2_HOST }}
+
+      - name: 배포 실패 알림
+        uses: rtCamp/action-slack-notify@v2
+        if: failure() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: danger
+          SLACK_MESSAGE: |
+            ❌ Backend EC2 배포 실패!
+
+            **환경**: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}
+            **브랜치**: ${{ github.ref_name }}
+            **커밋**: ${{ github.sha }}
+            **배포자**: ${{ github.actor }}
+
+            EC2 서버 로그를 확인해주세요.
+
+  rollback:
+    name: 롤백 (실패 시)
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-to-ec2]
+    if: failure() && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: SSH 키 설정
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: 이전 버전으로 롤백
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/${{ secrets.EC2_USER }}/dot-platform
+
+            # 이전 태그로 롤백
+            prev_tag=$(docker images --format "{{.Tag}}" | grep -v latest | head -n 2 | tail -n 1)
+            if [ -n "$prev_tag" ]; then
+              echo "🔄 이전 버전으로 롤백: $prev_tag"
+              docker-compose -f docker-compose.prod.yml down
+              export DOCKER_IMAGE="ghcr.io/${{ github.repository }}-backend:$prev_tag"
+              docker-compose -f docker-compose.prod.yml up -d
+              echo "✅ 롤백 완료"
+            else
+              echo "⚠️ 롤백할 이전 버전을 찾을 수 없습니다"
+            fi
+          EOF

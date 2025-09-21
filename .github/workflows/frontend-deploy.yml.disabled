@@ -1,0 +1,110 @@
+name: Frontend 자동 배포 (Vercel)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'frontend/**'
+      - 'vercel.json'
+      - '.github/workflows/frontend-deploy.yml'
+  workflow_dispatch:
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+jobs:
+  deploy-preview:
+    name: Preview 배포 (develop)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Vercel CLI 설치
+        run: npm install --global vercel@latest
+
+      - name: Vercel Preview 배포
+        run: |
+          vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --token=${{ secrets.VERCEL_TOKEN }}
+          vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} > deployment-url.txt
+          echo "Preview URL: $(cat deployment-url.txt)"
+
+      - name: 배포 URL 코멘트 추가
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const url = fs.readFileSync('deployment-url.txt', 'utf8').trim();
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Vercel Preview 배포 완료!\n\n🔗 URL: ${url}`
+            });
+
+  deploy-production:
+    name: Production 배포 (main)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Vercel CLI 설치
+        run: npm install --global vercel@latest
+
+      - name: Vercel Production 배포
+        run: |
+          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} > deployment-url.txt
+          echo "Production URL: $(cat deployment-url.txt)"
+
+      - name: 배포 성공 알림
+        uses: rtCamp/action-slack-notify@v2
+        if: success() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: good
+          SLACK_MESSAGE: |
+            🎉 Frontend Production 배포 성공!
+
+            **브랜치**: ${{ github.ref_name }}
+            **커밋**: ${{ github.sha }}
+            **배포자**: ${{ github.actor }}
+            **URL**: $(cat deployment-url.txt)
+
+      - name: 배포 실패 알림
+        uses: rtCamp/action-slack-notify@v2
+        if: failure() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: danger
+          SLACK_MESSAGE: |
+            ❌ Frontend Production 배포 실패!
+
+            **브랜치**: ${{ github.ref_name }}
+            **커밋**: ${{ github.sha }}
+            **배포자**: ${{ github.actor }}
+
+            로그를 확인해주세요.

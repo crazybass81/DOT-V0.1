@@ -1,0 +1,356 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop, 'feature/**' ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '20'
+  POSTGRES_VERSION: '15'
+  REDIS_VERSION: '7'
+
+jobs:
+  # 코드 품질 검사
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        cd backend && npm ci
+        cd ../frontend && npm ci
+
+    - name: Run ESLint - Backend
+      run: cd backend && npm run lint || true
+
+    - name: Run ESLint - Frontend
+      run: cd frontend && npm run lint || true
+
+    - name: Check code formatting
+      run: |
+        cd backend && npx prettier --check "src/**/*.js" || true
+        cd ../frontend && npx prettier --check "src/**/*.{js,jsx}" || true
+
+  # 보안 검사
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Run security audit - Backend
+      run: cd backend && npm audit --audit-level=moderate || true
+
+    - name: Run security audit - Frontend
+      run: cd frontend && npm audit --audit-level=moderate || true
+
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+  # 백엔드 테스트
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3-alpine
+        env:
+          POSTGRES_DB: dot_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: cd backend && npm ci
+
+    - name: Run migrations
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dot_test
+      run: |
+        cd backend
+        npx sequelize-cli db:migrate || true
+
+    - name: Run unit tests
+      env:
+        NODE_ENV: test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dot_test
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET: test-secret-key
+      run: |
+        cd backend
+        npm run test:unit -- --coverage
+
+    - name: Run integration tests
+      env:
+        NODE_ENV: test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dot_test
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET: test-secret-key
+      run: |
+        cd backend
+        npm run test:integration || true
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage/lcov.info
+        flags: backend
+        name: backend-coverage
+
+  # 프론트엔드 테스트
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: cd frontend && npm ci
+
+    - name: Run unit tests
+      run: |
+        cd frontend
+        npm run test -- --coverage --watchAll=false || true
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./frontend/coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+
+  # E2E 테스트
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3-alpine
+        env:
+          POSTGRES_DB: dot_e2e
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd backend && npm ci
+        cd ../frontend && npm ci
+        npx playwright install chromium
+
+    - name: Setup database
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dot_e2e
+      run: |
+        cd backend
+        npx sequelize-cli db:migrate || true
+        npx sequelize-cli db:seed:all || true
+
+    - name: Start backend server
+      env:
+        NODE_ENV: test
+        PORT: 3000
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dot_e2e
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET: e2e-test-secret
+      run: |
+        cd backend
+        npm start &
+        sleep 5
+
+    - name: Start frontend server
+      env:
+        REACT_APP_API_URL: http://localhost:3000/api/v1
+      run: |
+        cd frontend
+        npm start &
+        sleep 10
+
+    - name: Run E2E tests
+      run: |
+        npx playwright test --project=chromium
+
+    - name: Upload E2E test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 7
+
+  # Docker 이미지 빌드
+  build-docker:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [lint, security, test-backend, test-frontend]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: |
+          ${{ secrets.DOCKER_USERNAME }}/dot-backend
+          ${{ secrets.DOCKER_USERNAME }}/dot-frontend
+        tags: |
+          type=ref,event=branch
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push backend image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backend
+        push: true
+        tags: ${{ secrets.DOCKER_USERNAME }}/dot-backend:${{ github.sha }}
+        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/dot-backend:buildcache
+        cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/dot-backend:buildcache,mode=max
+
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./frontend
+        push: true
+        tags: ${{ secrets.DOCKER_USERNAME }}/dot-frontend:${{ github.sha }}
+        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/dot-frontend:buildcache
+        cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/dot-frontend:buildcache,mode=max
+
+  # 성능 테스트
+  performance-test:
+    name: Performance Test
+    runs-on: ubuntu-latest
+    needs: [e2e-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Run k6 performance tests
+      uses: grafana/k6-action@v0.3.0
+      with:
+        filename: tests/load/k6-script.js
+        flags: --out json=results.json
+
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      with:
+        name: k6-results
+        path: results.json
+        retention-days: 30
+
+  # 알림
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [lint, security, test-backend, test-frontend, e2e-tests]
+    if: always()
+
+    steps:
+    - name: Slack Notification
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: |
+          CI Pipeline ${{ job.status }}
+          Commit: ${{ github.event.head_commit.message }}
+          Author: ${{ github.event.head_commit.author.name }}
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

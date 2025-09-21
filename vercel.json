@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm install --legacy-peer-deps --force && GENERATE_SOURCEMAP=false npm run build",
+  "buildCommand": "cd frontend && npm install --legacy-peer-deps && npm run build:vercel",
   "outputDirectory": "frontend/build",
   "framework": "create-react-app",
   "env": {
@@ -21,7 +21,10 @@
     "env": {
       "SKIP_PREFLIGHT_CHECK": "true",
       "GENERATE_SOURCEMAP": "false",
-      "INLINE_RUNTIME_CHUNK": "false"
+      "INLINE_RUNTIME_CHUNK": "false",
+      "DISABLE_NEW_JSX_TRANSFORM": "true",
+      "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
     }
-  }
+  },
+  "installCommand": "cd frontend && npm install --legacy-peer-deps"
 }

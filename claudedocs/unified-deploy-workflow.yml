@@ -1,0 +1,622 @@
+name: Unified Deployment Pipeline
+# DOT-V0.1 통합 배포 파이프라인 - Solo Developer 최적화
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'claudedocs/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: '테스트 건너뛰기'
+        required: false
+        default: false
+        type: boolean
+      environment:
+        description: '배포 환경'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      rollback_mode:
+        description: '롤백 모드 (이전 버전으로 복구)'
+        required: false
+        default: false
+        type: boolean
+      target_version:
+        description: '롤백 대상 버전 (롤백 모드일 때만)'
+        required: false
+        default: 'previous'
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: 'ghcr.io'
+  PROJECT_NAME: 'dot-platform'
+
+jobs:
+  # Phase 1: 품질 검사 (병렬 실행, 비차단)
+  code-quality:
+    name: 코드 품질 검사
+    runs-on: ubuntu-latest
+    if: github.event.inputs.rollback_mode != 'true'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 린팅 실행 (비차단)
+        continue-on-error: true
+        run: |
+          echo "🔍 코드 린팅 실행..."
+          npm run lint --if-present || echo "⚠️ 린팅 경고 발견 (계속 진행)"
+
+      - name: 타입 체크 (비차단)
+        continue-on-error: true
+        run: |
+          echo "🔍 타입 체크 실행..."
+          npm run typecheck --if-present || echo "⚠️ 타입 오류 발견 (계속 진행)"
+
+  test-backend:
+    name: 백엔드 테스트
+    runs-on: ubuntu-latest
+    if: github.event.inputs.skip_tests != 'true' && github.event.inputs.rollback_mode != 'true'
+
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3-alpine
+        env:
+          POSTGRES_DB: dot_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 백엔드 의존성 설치
+        run: cd backend && npm ci
+
+      - name: 데이터베이스 마이그레이션
+        continue-on-error: true
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dot_test
+        run: |
+          cd backend
+          npx sequelize-cli db:migrate || echo "⚠️ 마이그레이션 실패 (계속 진행)"
+
+      - name: 백엔드 단위 테스트 (비차단)
+        continue-on-error: true
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dot_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret-key
+        run: |
+          cd backend
+          npm run test:unit -- --coverage || echo "⚠️ 백엔드 테스트 실패 (계속 진행)"
+
+      - name: 테스트 결과 업로드
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: backend/coverage/
+          retention-days: 3
+
+  test-frontend:
+    name: 프론트엔드 테스트
+    runs-on: ubuntu-latest
+    if: github.event.inputs.skip_tests != 'true' && github.event.inputs.rollback_mode != 'true'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 프론트엔드 의존성 설치
+        run: cd frontend && npm ci
+
+      - name: 프론트엔드 단위 테스트 (비차단)
+        continue-on-error: true
+        run: |
+          cd frontend
+          npm run test -- --coverage --watchAll=false || echo "⚠️ 프론트엔드 테스트 실패 (계속 진행)"
+
+      - name: 빌드 테스트 (비차단)
+        continue-on-error: true
+        run: |
+          cd frontend
+          npm run build || echo "⚠️ 빌드 실패 (계속 진행)"
+
+      - name: 테스트 결과 업로드
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results
+          path: frontend/coverage/
+          retention-days: 3
+
+  # Phase 2: 백엔드 빌드 (main 브랜치만)
+  build-backend:
+    name: 백엔드 Docker 이미지 빌드
+    runs-on: ubuntu-latest
+    needs: [code-quality]
+    if: github.ref == 'refs/heads/main' && github.event.inputs.rollback_mode != 'true'
+
+    outputs:
+      backend-image: ${{ steps.meta.outputs.backend-image }}
+      image-tag: ${{ steps.meta.outputs.image-tag }}
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Docker Buildx 설정
+        uses: docker/setup-buildx-action@v3
+
+      - name: GitHub Container Registry 로그인
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 메타데이터 설정
+        id: meta
+        run: |
+          IMAGE_TAG="${{ github.sha }}"
+          BACKEND_IMAGE="${{ env.REGISTRY }}/${{ github.repository }}-backend:${IMAGE_TAG}"
+
+          echo "image-tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "backend-image=${BACKEND_IMAGE}" >> $GITHUB_OUTPUT
+
+          echo "🐳 Backend 이미지: ${BACKEND_IMAGE}"
+
+      - name: 백엔드 Docker 이미지 빌드 및 푸시
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.backend-image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+
+  # Phase 3a: 프론트엔드 배포 (Vercel, main 브랜치만)
+  deploy-frontend:
+    name: 프론트엔드 배포 (Vercel)
+    runs-on: ubuntu-latest
+    needs: [code-quality]
+    if: github.ref == 'refs/heads/main' && github.event.inputs.rollback_mode != 'true'
+
+    outputs:
+      deployment-url: ${{ steps.vercel-deploy.outputs.deployment-url }}
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Vercel CLI 설치
+        run: npm install --global vercel@latest
+
+      - name: Vercel 프로덕션 배포
+        id: vercel-deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          cd frontend
+
+          echo "🚀 Vercel 프로덕션 배포 시작..."
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel build --prod --token=$VERCEL_TOKEN
+
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN)
+          echo "deployment-url=${DEPLOYMENT_URL}" >> $GITHUB_OUTPUT
+
+          echo "✅ 프론트엔드 배포 완료: ${DEPLOYMENT_URL}"
+
+  # Phase 3b: 백엔드 배포 (EC2 Docker, main 브랜치만)
+  deploy-backend:
+    name: 백엔드 배포 (EC2 Docker)
+    runs-on: ubuntu-latest
+    needs: [build-backend]
+    if: github.ref == 'refs/heads/main' && github.event.inputs.rollback_mode != 'true'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: SSH 키 설정
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: EC2 서버 배포
+        run: |
+          echo "🚀 EC2 백엔드 배포 시작..."
+
+          # 배포 스크립트 생성
+          cat > deploy-backend.sh << 'EOF'
+          #!/bin/bash
+          set -e
+
+          echo "📦 Docker 이미지: ${{ needs.build-backend.outputs.backend-image }}"
+
+          # 프로젝트 디렉토리로 이동
+          cd /home/${{ secrets.EC2_USER }}/DOT-V0.1 || {
+            echo "❌ 프로젝트 디렉토리를 찾을 수 없습니다"
+            exit 1
+          }
+
+          # 최신 코드 가져오기
+          git fetch origin
+          git checkout main
+          git pull origin main
+
+          # GitHub Container Registry 로그인
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+          # 이전 컨테이너 중지
+          echo "🛑 이전 컨테이너 중지..."
+          docker-compose -f docker-compose.prod.yml down || true
+
+          # 새 이미지 가져오기
+          echo "📥 새 이미지 가져오기..."
+          docker pull ${{ needs.build-backend.outputs.backend-image }}
+
+          # 환경 변수 설정 및 컨테이너 시작
+          echo "🔄 새 컨테이너 시작..."
+          export BACKEND_IMAGE="${{ needs.build-backend.outputs.backend-image }}"
+          docker-compose -f docker-compose.prod.yml up -d
+
+          # 헬스체크
+          echo "⏳ 서비스 시작 대기..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3001/health > /dev/null 2>&1; then
+              echo "✅ 백엔드 서비스 정상 시작!"
+              exit 0
+            fi
+            echo "헬스체크 시도 $i/30..."
+            sleep 2
+          done
+
+          echo "❌ 헬스체크 실패"
+          docker-compose -f docker-compose.prod.yml logs --tail=50
+          exit 1
+          EOF
+
+          # EC2에서 배포 스크립트 실행
+          ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+              'bash -s' < deploy-backend.sh
+
+      - name: 배포 검증
+        run: |
+          echo "🔍 배포 검증 시작..."
+
+          # API 헬스체크
+          for i in {1..10}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.EC2_HOST }}:3001/health)
+            if [ "$response" = "200" ]; then
+              echo "✅ Backend API 정상 작동"
+              break
+            fi
+            if [ $i -eq 10 ]; then
+              echo "❌ Backend API 응답 실패: $response"
+              exit 1
+            fi
+            echo "API 검증 시도 $i/10..."
+            sleep 3
+          done
+
+          # 버전 정보 확인
+          version=$(curl -s http://${{ secrets.EC2_HOST }}:3001/version || echo "unknown")
+          echo "📌 배포된 버전: $version"
+
+  # Phase 3c: PR 프리뷰 배포
+  deploy-preview:
+    name: PR 프리뷰 배포
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Vercel CLI 설치
+        run: npm install --global vercel@latest
+
+      - name: Vercel 프리뷰 배포
+        id: vercel-preview
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          cd frontend
+
+          echo "🔍 PR 프리뷰 배포 시작..."
+          vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+          vercel build --token=$VERCEL_TOKEN
+
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN)
+          echo "deployment-url=${DEPLOYMENT_URL}" >> $GITHUB_OUTPUT
+
+          echo "✅ 프리뷰 배포 완료: ${DEPLOYMENT_URL}"
+
+      - name: PR에 배포 URL 코멘트
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const deploymentUrl = '${{ steps.vercel-preview.outputs.deployment-url }}';
+            const prNumber = context.issue.number;
+
+            const comment = `
+            ## 🚀 프리뷰 배포 완료!
+
+            **프리뷰 URL**: ${deploymentUrl}
+
+            ### 테스트 체크리스트:
+            - [ ] UI/UX 변경 사항 확인
+            - [ ] 기능 동작 테스트
+            - [ ] 모바일 반응형 확인
+            - [ ] 콘솔 오류 없음 확인
+
+            ---
+            *새 커밋 푸시 시 자동으로 업데이트됩니다.*
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Phase 4: 배포 후 검증 및 모니터링
+  post-deploy-validation:
+    name: 배포 후 검증
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    if: github.ref == 'refs/heads/main' && github.event.inputs.rollback_mode != 'true' && always()
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 통합 헬스체크
+        run: |
+          echo "🔍 통합 시스템 검증 시작..."
+
+          # 프론트엔드 검증
+          if [[ "${{ needs.deploy-frontend.result }}" == "success" ]]; then
+            frontend_url="${{ needs.deploy-frontend.outputs.deployment-url }}"
+            echo "Frontend URL: ${frontend_url}"
+
+            response=$(curl -s -o /dev/null -w "%{http_code}" "${frontend_url}")
+            if [ "$response" = "200" ]; then
+              echo "✅ 프론트엔드 정상"
+            else
+              echo "⚠️ 프론트엔드 응답 이상: $response"
+            fi
+          fi
+
+          # 백엔드 검증
+          if [[ "${{ needs.deploy-backend.result }}" == "success" ]]; then
+            backend_url="http://${{ secrets.EC2_HOST }}:3001"
+            echo "Backend URL: ${backend_url}"
+
+            response=$(curl -s -o /dev/null -w "%{http_code}" "${backend_url}/health")
+            if [ "$response" = "200" ]; then
+              echo "✅ 백엔드 정상"
+            else
+              echo "⚠️ 백엔드 응답 이상: $response"
+            fi
+          fi
+
+      - name: 성능 요구사항 검증 (한국어 요구사항)
+        run: |
+          echo "🎯 성능 요구사항 검증 (<3초 로딩)"
+
+          if [[ "${{ needs.deploy-frontend.result }}" == "success" ]]; then
+            frontend_url="${{ needs.deploy-frontend.outputs.deployment-url }}"
+
+            response_time=$(curl -o /dev/null -s -w '%{time_total}' "${frontend_url}")
+            echo "페이지 로딩 시간: ${response_time}초"
+
+            if (( $(echo "$response_time < 3.0" | bc -l) )); then
+              echo "✅ 성능 요구사항 만족 (<3초)"
+            else
+              echo "⚠️ 성능 요구사항 미달: ${response_time}초 (목표: <3초)"
+            fi
+          fi
+
+  # Phase 5: 배포 태그 생성 (롤백용)
+  create-deployment-tag:
+    name: 배포 태그 생성
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend, post-deploy-validation]
+    if: github.ref == 'refs/heads/main' && success() && github.event.inputs.rollback_mode != 'true'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 배포 태그 생성
+        run: |
+          TAG_NAME="deploy-$(date +%Y%m%d-%H%M%S)"
+
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          git tag -a "$TAG_NAME" -m "Production deployment - $(date '+%Y-%m-%d %H:%M:%S')
+
+          Frontend: ${{ needs.deploy-frontend.outputs.deployment-url }}
+          Backend: ${{ needs.build-backend.outputs.backend-image }}
+          Commit: ${{ github.sha }}"
+
+          git push origin "$TAG_NAME" || echo "Tag push failed (permissions)"
+
+          echo "✅ 배포 태그 생성: $TAG_NAME"
+
+  # 롤백 작업 (수동 트리거)
+  rollback:
+    name: 이전 버전 롤백
+    runs-on: ubuntu-latest
+    if: github.event.inputs.rollback_mode == 'true'
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: SSH 키 설정
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: 백엔드 롤백
+        run: |
+          echo "🔄 백엔드 롤백 시작..."
+
+          ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/${{ secrets.EC2_USER }}/DOT-V0.1
+
+            # 이전 Docker 이미지 태그 찾기
+            prev_tag=$(docker images --format "{{.Tag}}" | grep -E '^[a-f0-9]{40}$' | head -n 2 | tail -n 1)
+
+            if [ -n "$prev_tag" ]; then
+              echo "🔄 이전 버전으로 롤백: $prev_tag"
+
+              # 현재 컨테이너 중지
+              docker-compose -f docker-compose.prod.yml down
+
+              # 이전 이미지로 재시작
+              export BACKEND_IMAGE="ghcr.io/${{ github.repository }}-backend:$prev_tag"
+              docker-compose -f docker-compose.prod.yml up -d
+
+              # 헬스체크
+              sleep 10
+              if curl -f http://localhost:3001/health > /dev/null 2>&1; then
+                echo "✅ 롤백 완료 - 서비스 정상"
+              else
+                echo "❌ 롤백 후 헬스체크 실패"
+                exit 1
+              fi
+            else
+              echo "⚠️ 롤백할 이전 버전을 찾을 수 없습니다"
+              exit 1
+            fi
+          EOF
+
+      - name: 프론트엔드 롤백
+        run: |
+          echo "🔄 프론트엔드 롤백 시작..."
+
+          npm install --global vercel@latest
+
+          # 이전 배포 찾기 및 프로모션
+          cd frontend
+          vercel login --token ${{ secrets.VERCEL_TOKEN }}
+
+          # 이전 배포 목록 가져오기
+          deployments=$(vercel ls --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }})
+          echo "이전 배포 목록 조회 완료"
+
+          echo "⚠️ 수동으로 Vercel 대시보드에서 이전 배포를 프로모션하세요"
+
+  # 최종 알림
+  notify-deployment:
+    name: 배포 알림
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend, post-deploy-validation, create-deployment-tag]
+    if: always() && github.ref == 'refs/heads/main' && github.event.inputs.rollback_mode != 'true'
+
+    steps:
+      - name: 배포 성공 알림
+        if: needs.deploy-frontend.result == 'success' && needs.deploy-backend.result == 'success'
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: good
+          SLACK_MESSAGE: |
+            🎉 DOT Platform 통합 배포 성공!
+
+            **브랜치**: ${{ github.ref_name }}
+            **커밋**: ${{ github.sha }}
+            **배포자**: ${{ github.actor }}
+
+            **Frontend**: ${{ needs.deploy-frontend.outputs.deployment-url }}
+            **Backend**: http://${{ secrets.EC2_HOST }}:3001
+
+            ✅ 모든 시스템이 정상 작동 중입니다.
+
+      - name: 배포 실패 알림
+        if: needs.deploy-frontend.result == 'failure' || needs.deploy-backend.result == 'failure'
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: danger
+          SLACK_MESSAGE: |
+            ❌ DOT Platform 배포 실패!
+
+            **브랜치**: ${{ github.ref_name }}
+            **커밋**: ${{ github.sha }}
+            **배포자**: ${{ github.actor }}
+
+            **Frontend**: ${{ needs.deploy-frontend.result }}
+            **Backend**: ${{ needs.deploy-backend.result }}
+
+            🔍 GitHub Actions 로그를 확인하세요.

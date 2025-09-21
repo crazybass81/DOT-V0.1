@@ -1,0 +1,101 @@
+name: Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd frontend && npm ci
+          cd ../backend && npm ci
+          cd ../
+
+      - name: Run tests (informational)
+        continue-on-error: true
+        run: |
+          echo "Running tests for PR #${{ github.event.pull_request.number }}..."
+          npm test || echo "⚠️ Tests failed - review before merging"
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+          cd ../
+
+      - name: Deploy preview to Vercel
+        id: vercel-preview
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          cd frontend
+          npx vercel --token=$VERCEL_TOKEN --yes --scope team_ZRA46B1Ng8n027CYnt0PzJzr > deployment.log 2>&1
+          DEPLOYMENT_URL=$(grep -E "https://.*vercel.app" deployment.log | head -1)
+          echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "Preview deployed to: $DEPLOYMENT_URL"
+
+      - name: Comment on PR
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const deploymentUrl = '${{ steps.vercel-preview.outputs.deployment-url }}';
+            const prNumber = context.issue.number;
+
+            const comment = `
+            ## 🚀 Preview Deployment Ready!
+
+            Your changes have been deployed to a preview environment:
+
+            🔗 **Preview URL**: ${deploymentUrl || 'Check Vercel dashboard'}
+
+            ### Quick Checks:
+            - [ ] Visual review completed
+            - [ ] Functionality tested
+            - [ ] Mobile responsive checked
+            - [ ] No console errors
+
+            ### Test Results:
+            Tests run status: ${{ job.status }}
+
+            ---
+            *This preview will be updated automatically when you push new commits.*
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Update PR status
+        if: always()
+        run: |
+          echo "PR #${{ github.event.pull_request.number }} preview status: ${{ job.status }}"
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Preview deployment successful"
+          else
+            echo "⚠️ Preview deployment completed with warnings"
+          fi
