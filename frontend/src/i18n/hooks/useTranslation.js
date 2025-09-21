@@ -10,6 +10,7 @@
  * - 네임스페이스 지원
  */
 
+import React from 'react';
 import { useTranslation as useI18nextTranslation } from 'react-i18next';
 import {
   formatDate,

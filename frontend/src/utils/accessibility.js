@@ -9,6 +9,8 @@
  * - 포커스 관리
  */
 
+import React from 'react';
+
 /**
  * 키보드 네비게이션 훅
  */
@@ -144,10 +146,10 @@ export function createFocusTrap(containerElement) {
  * 스크린 리더 전용 텍스트 생성
  */
 export function srOnly(text) {
-  return (
-    <span className="sr-only" aria-live="polite">
-      {text}
-    </span>
+  return React.createElement(
+    'span',
+    { className: 'sr-only', 'aria-live': 'polite' },
+    text
   );
 }
 
@@ -241,21 +243,21 @@ export function isFocusable(element) {
  * Skip to Content 링크 생성
  */
 export function SkipToContent({ targetId = 'main-content' }) {
-  return (
-    <a
-      href={`#${targetId}`}
-      className="skip-to-content"
-      onClick={(e) => {
+  return React.createElement(
+    'a',
+    {
+      href: `#${targetId}`,
+      className: 'skip-to-content',
+      onClick: (e) => {
         e.preventDefault();
         const target = document.getElementById(targetId);
         if (target) {
           target.focus();
           target.scrollIntoView();
         }
-      }}
-    >
-      본문으로 건너뛰기
-    </a>
+      }
+    },
+    '본문으로 건너뛰기'
   );
 }
 
@@ -265,17 +267,17 @@ export function SkipToContent({ targetId = 'main-content' }) {
 export function AccessibleError({ id, error }) {
   if (!error) return null;
 
-  return (
-    <div
-      id={id}
-      role="alert"
-      aria-live="assertive"
-      aria-atomic="true"
-      className="error-message"
-    >
-      <span className="error-icon" aria-hidden="true">⚠</span>
-      {error}
-    </div>
+  return React.createElement(
+    'div',
+    {
+      id: id,
+      role: 'alert',
+      'aria-live': 'assertive',
+      'aria-atomic': 'true',
+      className: 'error-message'
+    },
+    React.createElement('span', { className: 'error-icon', 'aria-hidden': 'true' }, '⚠'),
+    error
   );
 }
 
@@ -283,16 +285,16 @@ export function AccessibleError({ id, error }) {
  * 접근 가능한 로딩 상태
  */
 export function AccessibleLoading({ message = '로딩 중...' }) {
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      className="loading-state"
-    >
-      <span className="sr-only">{message}</span>
-      <div className="spinner" aria-hidden="true" />
-    </div>
+  return React.createElement(
+    'div',
+    {
+      role: 'status',
+      'aria-live': 'polite',
+      'aria-busy': 'true',
+      className: 'loading-state'
+    },
+    React.createElement('span', { className: 'sr-only' }, message),
+    React.createElement('div', { className: 'spinner', 'aria-hidden': 'true' })
   );
 }
 
@@ -302,28 +304,33 @@ export function AccessibleLoading({ message = '로딩 중...' }) {
 export function AccessibleProgressBar({ value, max = 100, label }) {
   const percentage = (value / max) * 100;
 
-  return (
-    <div className="progress-container">
-      {label && (
-        <label id="progress-label">{label}</label>
-      )}
-      <div
-        role="progressbar"
-        aria-valuenow={value}
-        aria-valuemin={0}
-        aria-valuemax={max}
-        aria-labelledby={label ? 'progress-label' : undefined}
-        className="progress-bar"
-      >
-        <div
-          className="progress-fill"
-          style={{ width: `${percentage}%` }}
-        />
-        <span className="sr-only">
-          {percentage.toFixed(0)}% 완료
-        </span>
-      </div>
-    </div>
+  return React.createElement(
+    'div',
+    { className: 'progress-container' },
+    label && React.createElement('label', { id: 'progress-label' }, label),
+    React.createElement(
+      'div',
+      {
+        role: 'progressbar',
+        'aria-valuenow': value,
+        'aria-valuemin': 0,
+        'aria-valuemax': max,
+        'aria-labelledby': label ? 'progress-label' : undefined,
+        className: 'progress-bar'
+      },
+      React.createElement(
+        'div',
+        {
+          className: 'progress-fill',
+          style: { width: `${percentage}%` }
+        }
+      ),
+      React.createElement(
+        'span',
+        { className: 'sr-only' },
+        `${percentage.toFixed(0)}% 완료`
+      )
+    )
   );
 }
 
