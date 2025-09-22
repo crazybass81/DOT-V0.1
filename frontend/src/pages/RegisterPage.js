@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
-import { Box, Paper, Typography, Alert } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Box } from '@mui/material';
+import Register from '../components/auth/Register';
 
 const RegisterPage = () => {
   return (
@@ -19,25 +19,7 @@ const RegisterPage = () => {
         padding: 2,
       }}
     >
-      <Paper
-        elevation={3}
-        sx={{
-          padding: 4,
-          maxWidth: 500,
-          width: '100%',
-          textAlign: 'center',
-        }}
-      >
-        <Typography variant="h4" color="primary" gutterBottom>
-          회원가입
-        </Typography>
-        
-        <Alert severity="info" sx={{ mt: 3 }}>
-          회원가입 기능은 추후 구현될 예정입니다.
-          <br />
-          <RouterLink to="/login">로그인 페이지로 돌아가기</RouterLink>
-        </Alert>
-      </Paper>
+      <Register />
     </Box>
   );
 };

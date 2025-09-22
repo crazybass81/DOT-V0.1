@@ -39,6 +39,21 @@ const initialState = {
 
 // 비동기 액션 정의
 
+// 회원가입 액션
+export const register = createAsyncThunk(
+  'auth/register',
+  async (userData, { rejectWithValue }) => {
+    try {
+      const response = await authService.register(userData);
+      return response;
+    } catch (error) {
+      return rejectWithValue({
+        message: error.message || '회원가입에 실패했습니다.'
+      });
+    }
+  }
+);
+
 // 로그인 액션
 export const login = createAsyncThunk(
   'auth/login',
@@ -205,6 +220,23 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // 회원가입 처리
+    builder
+      .addCase(register.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(register.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        // 회원가입 후 로그인하지 않고 로그인 페이지로 이동하도록 함
+        // 사용자 정보는 저장하지 않음
+      })
+      .addCase(register.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload?.message || '회원가입에 실패했습니다.';
+      });
+
     // 로그인 처리
     builder
       .addCase(login.pending, (state) => {

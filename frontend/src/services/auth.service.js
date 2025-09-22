@@ -39,8 +39,36 @@ const authService = {
    * @returns {Promise} 회원가입 응답
    */
   register: async (userData) => {
-    const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, userData);
-    return response.data;
+    try {
+      // 입력 데이터 정규화
+      const normalizedData = {
+        email: userData.email?.toLowerCase().trim(),
+        password: userData.password,
+        name: userData.name?.trim().replace(/\s+/g, ' '), // 중복 공백 제거
+        phone: userData.phone?.trim()
+      };
+
+      const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, normalizedData);
+      return response.data;
+    } catch (error) {
+      // 에러 메시지 한글화
+      if (error.response?.data?.message) {
+        const errorMessage = error.response.data.message;
+
+        // 영문 에러 메시지를 한글로 변환
+        const errorMap = {
+          'Email already exists': '이미 등록된 이메일입니다',
+          'Invalid email format': '올바른 이메일 형식이 아닙니다',
+          'Password too weak': '비밀번호가 너무 약합니다',
+          'Invalid phone format': '전화번호 형식은 010-XXXX-XXXX여야 합니다'
+        };
+
+        const translatedMessage = errorMap[errorMessage] || errorMessage;
+        throw new Error(translatedMessage);
+      }
+
+      throw authService.handleError(error);
+    }
   },
 
   /**
