@@ -1,7 +1,22 @@
 # Vercel 통합 배포 가이드
 
 ## 🚀 개요
-DOT Platform을 Vercel에 프론트엔드와 백엔드를 함께 배포하는 가이드입니다.
+DOT Platform을 Vercel에 배포하는 완전한 가이드입니다. 이 문서는 빠른 설정, 자동 배포, 그리고 상세한 설정 옵션을 모두 포함합니다.
+
+## ⚡ 빠른 시작 (5분)
+
+### 방법 1: Vercel Dashboard 직접 연동 (가장 간단!)
+1. [vercel.com/new](https://vercel.com/new) 접속
+2. GitHub 저장소 `crazybass81/DOT-V0.1` Import
+3. 설정:
+   - Framework Preset: `Create React App`
+   - Root Directory: `frontend`
+   - Branch: `main`
+4. Deploy 클릭!
+
+### 방법 2: GitHub Actions 자동 배포 (이미 설정됨)
+- ✅ main 브랜치 푸시 → 자동 프로덕션 배포
+- ✅ PR 생성 → 자동 프리뷰 배포
 
 ## 📋 사전 준비
 

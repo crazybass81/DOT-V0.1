@@ -55,3 +55,7 @@ temp/
 # OS
 Thumbs.db
 .vercel
+
+# MCP Server Tokens (NEVER commit these\!)
+.config/claude/.env
+*_token*

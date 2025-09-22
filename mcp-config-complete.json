@@ -1,0 +1,46 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "node",
+      "args": ["${HOME}/.config/mcp-servers/mcp-servers-official/src/filesystem/dist/index.js"],
+      "env": {
+        "ALLOWED_DIRECTORIES": "${HOME}/DOT-V0.1,${HOME}/.claude,${HOME}/projects"
+      },
+      "description": "Serena 대체 - 파일 시스템 접근 및 프로젝트 메모리"
+    },
+    "github": {
+      "command": "node",
+      "args": ["${HOME}/.config/mcp-servers/mcp-servers-official/src/github/dist/index.js"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "description": "GitHub 작업 - PR, Issues, Commits"
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@llmindset/mcp-server-sequential-thinking"],
+      "description": "Sequential - 복잡한 분석 및 체계적 문제 해결"
+    },
+    "playwright": {
+      "command": "node",
+      "args": ["${HOME}/.config/mcp-servers/playwright-mcp/dist/index.js"],
+      "env": {
+        "BROWSER": "chromium"
+      },
+      "description": "Playwright - 브라우저 자동화 및 E2E 테스트"
+    },
+    "vercel": {
+      "command": "node",
+      "args": ["${HOME}/.config/mcp-servers/mcp-servers-official/src/vercel/dist/index.js"],
+      "env": {
+        "VERCEL_TOKEN": "${VERCEL_TOKEN}"
+      },
+      "description": "Context7 대체 - Vercel 문서 및 배포"
+    },
+    "ide": {
+      "command": "node",
+      "args": ["${HOME}/.config/mcp-servers/vscode-mcp/dist/index.js"],
+      "description": "Magic/Morphllm 대체 - IDE 통합 코드 편집"
+    }
+  }
+}
