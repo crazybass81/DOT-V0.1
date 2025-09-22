@@ -1,12 +1,23 @@
 {
   "mcpServers": {
+    "serena": {
+      "command": "uv",
+      "args": [
+        "tool", "run",
+        "--from", "git+https://github.com/oraios/serena",
+        "serena", "start-mcp-server",
+        "--context", "ide-assistant",
+        "--project", "${HOME}/DOT-V0.1"
+      ],
+      "description": "Serena - 심볼 작업, 프로젝트 메모리 및 세션 관리"
+    },
     "filesystem": {
       "command": "node",
       "args": ["${HOME}/.config/mcp-servers/mcp-servers-official/src/filesystem/dist/index.js"],
       "env": {
         "ALLOWED_DIRECTORIES": "${HOME}/DOT-V0.1,${HOME}/.claude,${HOME}/projects"
       },
-      "description": "Serena 대체 - 파일 시스템 접근 및 프로젝트 메모리"
+      "description": "파일 시스템 접근 (백업)"
     },
     "github": {
       "command": "node",
