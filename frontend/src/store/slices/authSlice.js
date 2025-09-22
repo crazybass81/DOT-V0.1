@@ -159,6 +159,18 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    // 사용자 정보 설정
+    setUser: (state, action) => {
+      state.user = action.payload;
+      state.isAuthenticated = true;
+      state.lastActivity = Date.now();
+    },
+
+    // 사용자 정보 초기화
+    clearUser: (state) => {
+      Object.assign(state, initialState);
+    },
+
     // 에러 상태 초기화
     clearError: (state) => {
       state.error = null;
@@ -312,6 +324,8 @@ const authSlice = createSlice({
 
 // 액션 내보내기
 export const {
+  setUser,
+  clearUser,
   clearError,
   updateLastActivity,
   toggleRoleSwitcher,

@@ -314,6 +314,7 @@ export const API_ENDPOINTS = {
     REGISTER: '/auth/register',
     REFRESH: '/auth/refresh',
     VERIFY: '/auth/verify',
+    ME: '/auth/me',
     SWITCH_ROLE: '/auth/switch-role',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
