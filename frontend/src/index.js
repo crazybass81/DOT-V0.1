@@ -116,7 +116,7 @@ if (document.readyState === 'loading') {
 }
 
 // 서비스 워커 등록 (PWA 지원 준비)
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production' && process.env.REACT_APP_ENABLE_SERVICE_WORKER !== 'false') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
