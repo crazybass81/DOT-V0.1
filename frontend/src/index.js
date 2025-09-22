@@ -115,7 +115,7 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
-// 서비스 워커 등록 (PWA 지원 준비)
+// 서비스 워커 등록 (PWA 지원 준비) - Force rebuild for environment variables
 if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production' && process.env.REACT_APP_ENABLE_SERVICE_WORKER !== 'false') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
