@@ -8,10 +8,10 @@
 import axios from 'axios';
 
 // API 기본 URL 설정
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api/v1';
 
 // Socket.io 기본 URL
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3000';
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
 
 // Store 접근을 위한 동적 참조 (초기화 후 설정됨)
 let storeRef = null;
