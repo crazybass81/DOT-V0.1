@@ -5,8 +5,8 @@
   "private": true,
   "scripts": {
     "start": "react-scripts start",
-    "build": "GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false react-scripts build",
-    "build:vercel": "GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false DISABLE_NEW_JSX_TRANSFORM=true react-scripts build",
+    "build": "rm -rf build node_modules/.cache && GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false react-scripts build",
+    "build:vercel": "rm -rf build node_modules/.cache && GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false DISABLE_NEW_JSX_TRANSFORM=true react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint src/",
