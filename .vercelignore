@@ -1,4 +1,4 @@
-# Database and data files
+# Database and data files - Force clean build
 postgres-data/
 redis-data/
 *.db
