@@ -21,8 +21,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import authService from '../../services/auth.service';
-import { selectAuthLoading, selectAuthError, selectIsAuthenticated } from '../../store/slices/authSlice';
+import { login, selectAuthLoading, selectAuthError, selectIsAuthenticated } from '../../store/slices/authSlice';
 
 // 스타일 컴포넌트
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -127,8 +126,12 @@ function Login() {
     }
 
     try {
-      // 로그인 실행
-      await authService.login(formData.email, formData.password);
+      // 로그인 실행 (Redux thunk 사용)
+      await dispatch(login({
+        email: formData.email,
+        password: formData.password,
+        rememberMe: formData.rememberMe
+      })).unwrap();
 
       // 성공 시 대시보드로 이동 (useEffect에서 처리)
     } catch (err) {

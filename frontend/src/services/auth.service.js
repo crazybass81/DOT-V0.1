@@ -1,39 +1,31 @@
 /**
  * DOT Platform Frontend - 인증 서비스
  * 백엔드 인증 API와 통신하는 서비스 모듈
- * 순환 종속성 해결을 위해 독립적인 API 클라이언트 사용
+ * 순환 종속성 해결을 위해 Redux 의존성 제거 - 순수 서비스 레이어로 구현
  */
 
 import api, { API_ENDPOINTS } from './api-client';
-import { store } from '../store';
-import { setUser, clearUser } from '../store/slices/authSlice';
 
 // 인증 서비스
 const authService = {
   /**
    * 로그인
-   * @param {string} email - 이메일
-   * @param {string} password - 비밀번호
+   * @param {Object} credentials - 로그인 정보
+   * @param {string} credentials.email - 이메일
+   * @param {string} credentials.password - 비밀번호
+   * @param {boolean} credentials.rememberMe - 자동 로그인 여부
    * @returns {Promise} 로그인 응답
    */
-  login: async (email, password) => {
+  login: async (credentials) => {
     try {
-      const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, {
-        email,
-        password
-      });
+      const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
 
-      const { token, refreshToken, user } = response.data;
-
-      // 토큰 저장
-      localStorage.setItem('token', token);
-      localStorage.setItem('refreshToken', refreshToken);
-
-      // Redux 상태 업데이트
-      store.dispatch(setUser(user));
+      const { token, refreshToken } = response.data;
 
       // API 클라이언트 헤더 설정
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      if (token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
 
       return response.data;
     } catch (error) {
@@ -60,13 +52,10 @@ const authService = {
       await api.post(API_ENDPOINTS.AUTH.LOGOUT);
     } catch (error) {
       // 로그아웃은 실패해도 클라이언트에서는 성공으로 처리
-      console.warn('Logout API failed, clearing local state:', error);
+      console.warn('Logout API failed:', error);
     } finally {
-      // 항상 로컬 상태 정리
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
+      // API 헤더 정리
       delete api.defaults.headers.common['Authorization'];
-      store.dispatch(clearUser());
     }
   },
 
@@ -86,10 +75,10 @@ const authService = {
 
   /**
    * 토큰 갱신
+   * @param {string} refreshToken - 갱신 토큰
    * @returns {Promise} 새 토큰
    */
-  refreshToken: async () => {
-    const refreshToken = localStorage.getItem('refreshToken');
+  refreshToken: async (refreshToken) => {
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
@@ -100,10 +89,13 @@ const authService = {
       });
 
       const { token } = response.data;
-      localStorage.setItem('token', token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-      return token;
+      // API 헤더 업데이트
+      if (token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+
+      return response.data;
     } catch (error) {
       throw authService.handleError(error);
     }
@@ -111,17 +103,16 @@ const authService = {
 
   /**
    * 역할 전환
+   * @param {string} businessId - 사업장 ID
    * @param {string} role - 전환할 역할
    * @returns {Promise} 역할 전환 응답
    */
-  switchRole: async (role) => {
+  switchRole: async (businessId, role) => {
     try {
       const response = await api.post(API_ENDPOINTS.AUTH.SWITCH_ROLE, {
+        businessId,
         role
       });
-
-      // Redux 상태 업데이트
-      store.dispatch(setUser(response.data.user));
 
       return response.data;
     } catch (error) {

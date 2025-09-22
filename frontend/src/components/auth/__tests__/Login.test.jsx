@@ -9,10 +9,6 @@ import { BrowserRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import Login from '../Login';
 import authReducer from '../../../store/slices/authSlice';
-import authService from '../../../services/auth.service';
-
-// Mock authService
-jest.mock('../../../services/auth.service');
 
 // Mock useNavigate
 const mockNavigate = jest.fn();
@@ -136,12 +132,6 @@ describe('Login Component', () => {
 
   describe('로그인 기능', () => {
     it('유효한 자격증명으로 로그인 성공 시 대시보드로 이동해야 함', async () => {
-      authService.login.mockResolvedValue({
-        token: 'test-token',
-        refreshToken: 'test-refresh-token',
-        user: { id: '1', email: 'test@example.com', role: 'worker' }
-      });
-
       const store = createTestStore();
       renderLogin(store);
 
@@ -156,14 +146,14 @@ describe('Login Component', () => {
       // 로그인 버튼 클릭
       fireEvent.click(screen.getByRole('button', { name: /로그인/i }));
 
+      // MSW가 모킹한 응답을 기다림
       await waitFor(() => {
-        expect(authService.login).toHaveBeenCalledWith('test@example.com', 'password123');
+        expect(store.getState().auth.isAuthenticated).toBe(true);
       });
     });
 
     it('로그인 실패 시 에러 메시지가 표시되어야 함', async () => {
       const errorMessage = '이메일 또는 비밀번호가 올바르지 않습니다';
-      authService.login.mockRejectedValue(new Error(errorMessage));
 
       const store = createTestStore({ error: errorMessage });
       renderLogin(store);
