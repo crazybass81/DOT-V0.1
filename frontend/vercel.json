@@ -2,6 +2,11 @@
   "public": true,
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "frontend/**": {
+      "memory": 1024
+    }
+  },
   "env": {
     "REACT_APP_API_URL": "http://100.25.70.173:3001/api/v1",
     "REACT_APP_SOCKET_URL": "ws://100.25.70.173:3001",

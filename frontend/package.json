@@ -1,6 +1,6 @@
 {
   "name": "dot-platform-frontend",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DOT Platform Frontend - React 기반 식음료 사업 운영 관리 사용자 인터페이스",
   "private": true,
   "scripts": {
