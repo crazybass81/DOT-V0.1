@@ -16,6 +16,9 @@
     "REACT_APP_ENV": "production",
     "REACT_APP_ENABLE_SERVICE_WORKER": "false"
   },
+  "buildCommand": "./vercel-build.sh",
+  "outputDirectory": "build",
+  "installCommand": "npm install",
   "build": {
     "env": {
       "REACT_APP_API_URL": "http://100.25.70.173:3001/api/v1",

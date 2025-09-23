@@ -1,12 +1,12 @@
 {
   "name": "dot-platform-frontend",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "DOT Platform Frontend - React 기반 식음료 사업 운영 관리 사용자 인터페이스",
   "private": true,
   "scripts": {
     "start": "react-scripts start",
-    "build": "rm -rf build node_modules/.cache && GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false react-scripts build",
-    "build:vercel": "rm -rf build node_modules/.cache && GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false DISABLE_NEW_JSX_TRANSFORM=true react-scripts build",
+    "build": "rm -rf build node_modules/.cache && REACT_APP_API_URL=http://100.25.70.173:3001/api/v1 REACT_APP_SOCKET_URL=ws://100.25.70.173:3001 GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false react-scripts build",
+    "build:vercel": "rm -rf build node_modules/.cache && REACT_APP_API_URL=http://100.25.70.173:3001/api/v1 REACT_APP_SOCKET_URL=ws://100.25.70.173:3001 REACT_APP_ENV=production GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false DISABLE_NEW_JSX_TRANSFORM=true react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint src/",
