@@ -5,8 +5,8 @@
   "private": true,
   "scripts": {
     "start": "react-scripts start",
-    "build": "rm -rf build node_modules/.cache && REACT_APP_API_URL=http://100.25.70.173:3001/api/v1 REACT_APP_SOCKET_URL=ws://100.25.70.173:3001 GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false react-scripts build",
-    "build:vercel": "rm -rf build node_modules/.cache && REACT_APP_API_URL=http://100.25.70.173:3001/api/v1 REACT_APP_SOCKET_URL=ws://100.25.70.173:3001 REACT_APP_ENV=production GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false DISABLE_NEW_JSX_TRANSFORM=true react-scripts build",
+    "build": "rm -rf build node_modules/.cache && REACT_APP_API_URL=/api/v1 REACT_APP_SOCKET_URL=/ GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false react-scripts build",
+    "build:vercel": "rm -rf build node_modules/.cache && REACT_APP_API_URL=/api/v1 REACT_APP_SOCKET_URL=/ REACT_APP_ENV=production GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false DISABLE_NEW_JSX_TRANSFORM=true react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint src/",
