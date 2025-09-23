@@ -26,6 +26,17 @@ router.get('/version', (req, res) => {
 });
 
 // v1 API 라우트 등록
+// Health Check for v1
+router.get('/v1/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    status: 'healthy',
+    version: 'v1',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // 인증 라우트 (T056-T075)
 router.use('/v1/auth', require('./auth'));
 

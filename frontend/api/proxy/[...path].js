@@ -1,91 +1,114 @@
 // Vercel Serverless Function - API Proxy
-// Mixed Content 문제 해결을 위한 HTTPS → HTTP 프록시
+// HTTPS → HTTP 프록시 (Mixed Content 해결)
 
 export default async function handler(req, res) {
-  // CORS 설정
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // CORS 헤더 설정
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept-Language',
+    'Access-Control-Allow-Credentials': 'true'
+  };
 
-  // OPTIONS 요청 처리
+  // 모든 응답에 CORS 헤더 추가
+  Object.keys(corsHeaders).forEach(key => {
+    res.setHeader(key, corsHeaders[key]);
+  });
+
+  // OPTIONS 프리플라이트 요청 처리
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
+  // 백엔드 정보
+  const BACKEND_BASE = 'http://100.25.70.173:3001';
+
   try {
-    // path 파라미터 확인
+    // URL 경로 구성
     const pathParts = req.query.path;
     if (!pathParts || !Array.isArray(pathParts)) {
-      return res.status(400).json({ error: 'Invalid path parameter' });
+      console.error('Invalid path:', req.query);
+      return res.status(400).json({
+        error: 'Invalid path parameter',
+        received: req.query
+      });
     }
 
-    // 백엔드 URL 구성
-    const backendUrl = `http://100.25.70.173:3001/api/v1/${pathParts.join('/')}`;
+    const apiPath = pathParts.join('/');
+    const backendUrl = `${BACKEND_BASE}/api/v1/${apiPath}`;
 
-    // 디버깅 로그
-    console.log('=== Proxy Debug Info ===');
-    console.log('Request Method:', req.method);
-    console.log('Request URL:', req.url);
-    console.log('Request Query:', req.query);
+    // 요청 로깅
+    console.log('=== Proxy Request ===');
+    console.log('Method:', req.method);
+    console.log('Original URL:', req.url);
     console.log('Path Parts:', pathParts);
     console.log('Backend URL:', backendUrl);
-    console.log('Request Body:', req.body);
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Body:', JSON.stringify(req.body, null, 2));
 
-    // 요청 전달을 위한 headers 준비
+    // 전달할 헤더 구성
     const forwardHeaders = {
       'Content-Type': 'application/json',
-      'User-Agent': 'Vercel-Proxy/1.0',
+      'User-Agent': 'Vercel-Proxy/1.0'
     };
 
-    // Authorization 헤더가 있으면 전달
+    // 인증 헤더 전달
     if (req.headers.authorization) {
-      forwardHeaders.authorization = req.headers.authorization;
+      forwardHeaders['Authorization'] = req.headers.authorization;
     }
 
-    // Accept-Language 헤더 전달
+    // 언어 헤더 전달
     if (req.headers['accept-language']) {
-      forwardHeaders['accept-language'] = req.headers['accept-language'];
+      forwardHeaders['Accept-Language'] = req.headers['accept-language'];
     }
 
-    console.log('Forward Headers:', forwardHeaders);
-
-    // body 데이터 준비
-    let bodyData = undefined;
-    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
-      bodyData = JSON.stringify(req.body);
-      console.log('Request Body String:', bodyData);
-    }
-
-    // 요청 전달
-    const response = await fetch(backendUrl, {
+    // 요청 옵션 구성
+    const fetchOptions = {
       method: req.method,
-      headers: forwardHeaders,
-      body: bodyData,
-    });
+      headers: forwardHeaders
+    };
 
-    console.log('Backend Response Status:', response.status);
+    // POST, PUT 등에 body 추가
+    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
+      fetchOptions.body = JSON.stringify(req.body);
+      console.log('Body String:', fetchOptions.body);
+    }
 
-    // 응답 데이터 처리
-    const data = await response.text();
-    console.log('Backend Response Data:', data.substring(0, 200));
+    console.log('Fetch Options:', JSON.stringify(fetchOptions, null, 2));
 
-    // Content-Type 헤더 복사
-    const contentType = response.headers.get('content-type');
+    // 백엔드로 요청 전달
+    const backendResponse = await fetch(backendUrl, fetchOptions);
+
+    console.log('=== Backend Response ===');
+    console.log('Status:', backendResponse.status);
+    console.log('Status Text:', backendResponse.statusText);
+    console.log('Headers:', Object.fromEntries(backendResponse.headers.entries()));
+
+    // 응답 본문 읽기
+    const responseText = await backendResponse.text();
+    console.log('Response Body Length:', responseText.length);
+    console.log('Response Body Preview:', responseText.substring(0, 200));
+
+    // Content-Type 헤더 전달
+    const contentType = backendResponse.headers.get('content-type');
     if (contentType) {
       res.setHeader('Content-Type', contentType);
     }
 
-    // 응답 전달
-    return res.status(response.status).send(data);
+    // 응답 반환
+    res.status(backendResponse.status).send(responseText);
 
   } catch (error) {
     console.error('=== Proxy Error ===');
+    console.error('Error Type:', error.constructor.name);
     console.error('Error Message:', error.message);
     console.error('Error Stack:', error.stack);
 
-    return res.status(500).json({
-      error: 'Proxy server error',
-      details: error.message,
+    // 에러 응답
+    res.status(500).json({
+      error: 'Proxy Error',
+      message: error.message,
+      type: error.constructor.name,
       timestamp: new Date().toISOString()
     });
   }
