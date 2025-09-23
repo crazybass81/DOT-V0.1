@@ -30,7 +30,7 @@
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
-      "destination": "http://100.25.70.173:3001/api/v1/$1"
+      "destination": "/api/proxy/$1"
     },
     {
       "source": "/socket.io/(.*)",
