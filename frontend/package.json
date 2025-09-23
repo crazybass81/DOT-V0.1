@@ -7,6 +7,7 @@
     "start": "react-scripts start",
     "build": "rm -rf build node_modules/.cache && REACT_APP_API_URL=/api/v1 REACT_APP_SOCKET_URL=/ GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false react-scripts build",
     "build:vercel": "rm -rf build node_modules/.cache && REACT_APP_API_URL=/api/v1 REACT_APP_SOCKET_URL=/ REACT_APP_ENV=production GENERATE_SOURCEMAP=false INLINE_RUNTIME_CHUNK=false DISABLE_NEW_JSX_TRANSFORM=true react-scripts build",
+    "test:proxy": "curl -X GET https://dot-platform-frontend.vercel.app/api/health",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint src/",

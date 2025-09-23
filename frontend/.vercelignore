@@ -1,0 +1,16 @@
+# Vercel Ignore - Build optimization
+node_modules/
+.git/
+*.log
+.env.local
+.env.development
+coverage/
+tests/
+src/**/*.test.js
+src/**/*.spec.js
+public/*.md
+webpack.config.js
+nginx.conf
+Dockerfile
+*.md
+!README.md

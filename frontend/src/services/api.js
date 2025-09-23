@@ -8,8 +8,9 @@ import { store } from '../store';
 import { logout, refreshToken } from '../store/slices/authSlice';
 import { addToast } from '../store/slices/uiSlice';
 
-// API 기본 URL 설정
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api/v1';
+// API 기본 URL 설정 - Vercel Functions 프록시 사용
+const API_BASE_URL = process.env.REACT_APP_API_URL ||
+  (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:3001/api/v1');
 
 // Socket.io 기본 URL
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';

@@ -6,8 +6,9 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "frontend/**": {
-      "memory": 1024
+    "api/**": {
+      "memory": 1024,
+      "maxDuration": 30
     }
   },
   "env": {
@@ -30,7 +31,7 @@
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
-      "destination": "/pages/api?path=$1"
+      "destination": "/api/proxy?path=$1"
     },
     {
       "source": "/socket.io/(.*)",
