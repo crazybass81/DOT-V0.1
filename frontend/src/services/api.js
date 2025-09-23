@@ -9,10 +9,10 @@ import { logout, refreshToken } from '../store/slices/authSlice';
 import { addToast } from '../store/slices/uiSlice';
 
 // API 기본 URL 설정
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api/v1';
 
 // Socket.io 기본 URL
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3000';
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
 
 // Axios 인스턴스 생성
 const apiClient = axios.create({

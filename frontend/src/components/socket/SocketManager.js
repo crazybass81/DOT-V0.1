@@ -24,7 +24,7 @@ const SocketManager = () => {
     }
 
     // 소켓 연결 설정
-    const socketUrl = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3000';
+    const socketUrl = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
 
     socketRef.current = io(socketUrl, {
       auth: {
