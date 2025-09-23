@@ -3,6 +3,11 @@
  * DOT Platform 백엔드 서버
  */
 
+// Railway 환경 설정 (있으면 적용)
+if (process.env.RAILWAY_ENVIRONMENT) {
+  require('./config/railway');
+}
+
 const app = require('./app');
 const { initDatabase } = require('./config/database');
 const redisClient = require('./config/redis');
