@@ -1,6 +1,12 @@
 // Vercel Serverless Function - API Proxy
 // HTTPS → HTTP 프록시 (Mixed Content 해결)
 
+export const config = {
+  runtime: 'nodejs18.x',
+  regions: ['iad1'],
+  maxDuration: 30
+};
+
 export default async function handler(req, res) {
   // CORS 헤더 설정
   const corsHeaders = {
@@ -15,8 +21,14 @@ export default async function handler(req, res) {
     res.setHeader(key, corsHeaders[key]);
   });
 
+  console.log('=== Function Called ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Query:', req.query);
+
   // OPTIONS 프리플라이트 요청 처리
   if (req.method === 'OPTIONS') {
+    console.log('OPTIONS request handled');
     return res.status(200).end();
   }
 
@@ -26,11 +38,21 @@ export default async function handler(req, res) {
   try {
     // URL 경로 구성
     const pathParts = req.query.path;
-    if (!pathParts || !Array.isArray(pathParts)) {
-      console.error('Invalid path:', req.query);
+    if (!pathParts) {
+      console.error('No path in query:', req.query);
       return res.status(400).json({
-        error: 'Invalid path parameter',
-        received: req.query
+        error: 'No path parameter',
+        query: req.query,
+        url: req.url
+      });
+    }
+
+    if (!Array.isArray(pathParts)) {
+      console.error('Path is not array:', pathParts, typeof pathParts);
+      return res.status(400).json({
+        error: 'Path parameter is not array',
+        path: pathParts,
+        type: typeof pathParts
       });
     }
 
@@ -42,9 +64,15 @@ export default async function handler(req, res) {
     console.log('Method:', req.method);
     console.log('Original URL:', req.url);
     console.log('Path Parts:', pathParts);
+    console.log('API Path:', apiPath);
     console.log('Backend URL:', backendUrl);
-    console.log('Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('Body:', JSON.stringify(req.body, null, 2));
+
+    // Body 로깅 (중요한 정보는 마스킹)
+    if (req.body) {
+      const logBody = { ...req.body };
+      if (logBody.password) logBody.password = '[MASKED]';
+      console.log('Request Body:', JSON.stringify(logBody, null, 2));
+    }
 
     // 전달할 헤더 구성
     const forwardHeaders = {
@@ -71,12 +99,16 @@ export default async function handler(req, res) {
     // POST, PUT 등에 body 추가
     if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
       fetchOptions.body = JSON.stringify(req.body);
-      console.log('Body String:', fetchOptions.body);
+      console.log('Body added to request, length:', fetchOptions.body.length);
     }
 
-    console.log('Fetch Options:', JSON.stringify(fetchOptions, null, 2));
+    console.log('Fetch Options:', JSON.stringify({
+      ...fetchOptions,
+      body: fetchOptions.body ? '[BODY_PRESENT]' : undefined
+    }, null, 2));
 
     // 백엔드로 요청 전달
+    console.log('Sending request to:', backendUrl);
     const backendResponse = await fetch(backendUrl, fetchOptions);
 
     console.log('=== Backend Response ===');
@@ -96,7 +128,8 @@ export default async function handler(req, res) {
     }
 
     // 응답 반환
-    res.status(backendResponse.status).send(responseText);
+    console.log('Returning response with status:', backendResponse.status);
+    return res.status(backendResponse.status).send(responseText);
 
   } catch (error) {
     console.error('=== Proxy Error ===');
@@ -105,7 +138,7 @@ export default async function handler(req, res) {
     console.error('Error Stack:', error.stack);
 
     // 에러 응답
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Proxy Error',
       message: error.message,
       type: error.constructor.name,
