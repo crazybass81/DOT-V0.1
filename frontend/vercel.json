@@ -1,5 +1,8 @@
 {
   "public": true,
+  "authentication": {
+    "enabled": false
+  },
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
