@@ -1,22 +1,36 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm install --legacy-peer-deps && npm run build:vercel",
+  "buildCommand": "npm install --legacy-peer-deps && cd frontend && npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "frontend/build",
-  "framework": "create-react-app",
-  "env": {
-    "NODE_ENV": "production",
-    "REACT_APP_API_URL": "http://100.25.70.173:3001",
-    "REACT_APP_SOCKET_URL": "ws://100.25.70.173:3001",
-    "DISABLE_NEW_JSX_TRANSFORM": "true"
+  "framework": null,
+  "functions": {
+    "api/backend.js": {
+      "maxDuration": 30,
+      "memory": 1024,
+      "runtime": "nodejs20.x",
+      "includeFiles": "backend/**"
+    }
   },
   "rewrites": [
+    {
+      "source": "/api/v1/(.*)",
+      "destination": "/api/backend"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/backend"
+    },
     {
       "source": "/(.*)",
       "destination": "/"
     }
   ],
-  "regions": ["icn1"],
-  "public": true,
+  "env": {
+    "NODE_ENV": "production",
+    "REACT_APP_API_URL": "/api/v1",
+    "REACT_APP_SOCKET_URL": "/",
+    "DISABLE_NEW_JSX_TRANSFORM": "true"
+  },
   "build": {
     "env": {
       "SKIP_PREFLIGHT_CHECK": "true",
@@ -26,5 +40,7 @@
       "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
     }
   },
-  "installCommand": "cd frontend && npm install --legacy-peer-deps"
+  "regions": ["icn1"],
+  "public": true,
+  "installCommand": "npm install --legacy-peer-deps && cd frontend && npm install --legacy-peer-deps && cd ../backend && npm install"
 }
