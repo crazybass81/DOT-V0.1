@@ -1,15 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm install --legacy-peer-deps && cd frontend && npm install --legacy-peer-deps && npm run build",
+  "buildCommand": "cd frontend && npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "frontend/build",
-  "framework": null,
-  "functions": {
-    "api/backend.js": {
-      "maxDuration": 30,
-      "memory": 1024,
-      "includeFiles": "backend/**"
-    }
-  },
+  "framework": "create-react-app",
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
@@ -41,5 +34,5 @@
   },
   "regions": ["icn1"],
   "public": true,
-  "installCommand": "npm install --legacy-peer-deps && cd frontend && npm install --legacy-peer-deps && cd ../backend && npm install"
+  "installCommand": "cd frontend && npm install --legacy-peer-deps"
 }
