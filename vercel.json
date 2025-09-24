@@ -7,7 +7,6 @@
     "api/backend.js": {
       "maxDuration": 30,
       "memory": 1024,
-      "runtime": "nodejs20.x",
       "includeFiles": "backend/**"
     }
   },
